@@ -1,106 +1,148 @@
-export function calculateKinship(focusId: number, persons: any[]) {
-  // Tạo Map để tra cứu nhanh
-  const map = new Map<number, any>();
-  persons.forEach(p => {
-    map.set(p.id, { ...p, kinship_title: '' });
-  });
+export function calculateKinship(focusId: number | string | null, persons: any[]) {
+  if (!focusId) return persons;
 
-  const focus = map.get(focusId);
+  const targetId = Number(focusId);
+
+  // 1. CHUẨN HÓA KIỂU DỮ LIỆU: Ép tất cả ID về dạng Number để tránh lỗi so sánh '1' === 1
+  const normalizedPersons = persons.map(p => ({
+    ...p,
+    id: Number(p.id),
+    fid: p.fid !== null && p.fid !== undefined && p.fid !== '' ? Number(p.fid) : null,
+    mid: p.mid !== null && p.mid !== undefined && p.mid !== '' ? Number(p.mid) : null,
+    pids: Array.isArray(p.pids) ? p.pids.map((id: any) => Number(id)) : [],
+    kinship_title: ''
+  }));
+
+  const map = new Map<number, any>();
+  normalizedPersons.forEach(p => map.set(p.id, p));
+
+  const focus = map.get(targetId);
   if (!focus) return persons;
 
-  // 1. Bản thân
+  // 2. Bản thân
   focus.kinship_title = 'Bản thân';
 
-  // 2. Vợ / Chồng
-  const pids = Array.isArray(focus.pids) ? focus.pids : [];
-  pids.forEach((spouseId: number) => {
-    const spouse = map.get(spouseId);
-    if (spouse) {
-      spouse.kinship_title = spouse.gender === 'female' ? 'Vợ' : 'Chồng';
-    }
+  // Helper lấy danh sách phối ngẫu
+  const getSpouses = (p: any) => {
+    return (p.pids || []).map((id: number) => map.get(id)).filter(Boolean);
+  };
+
+  // 3. Vợ / Chồng
+  getSpouses(focus).forEach((spouse: any) => {
+    spouse.kinship_title = spouse.gender === 'female' ? 'Vợ' : 'Chồng';
   });
 
-  // 3. Cha / Mẹ
+  // 4. Cha / Mẹ
   const father = focus.fid ? map.get(focus.fid) : null;
   const mother = focus.mid ? map.get(focus.mid) : null;
 
   if (father) father.kinship_title = 'Cha / Bố';
   if (mother) mother.kinship_title = 'Mẹ';
 
-  // 4. Ông / Bà (Nội - Ngoại)
-  if (father) {
-    if (father.fid && map.has(father.fid)) map.get(father.fid).kinship_title = 'Ông nội';
-    if (father.mid && map.has(father.mid)) map.get(father.mid).kinship_title = 'Bà nội';
-  }
-  if (mother) {
-    if (mother.fid && map.has(mother.fid)) map.get(mother.fid).kinship_title = 'Ông ngoại';
-    if (mother.mid && map.has(mother.mid)) map.get(mother.mid).kinship_title = 'Bà ngoại';
-  }
+  // 5. Ông / Bà (Nội - Ngoại)
+  const paternalGrandFather = father && father.fid ? map.get(father.fid) : null;
+  const paternalGrandMother = father && father.mid ? map.get(father.mid) : null;
+  const maternalGrandFather = mother && mother.fid ? map.get(mother.fid) : null;
+  const maternalGrandMother = mother && mother.mid ? map.get(mother.mid) : null;
 
-  // 5. Cụ / Cố (Ông/Bà của Cha hoặc Mẹ)
-  persons.forEach(p => {
-    if (father && father.fid) {
-      const grandFather = map.get(father.fid);
-      if (grandFather) {
-        if (grandFather.fid === p.id) p.kinship_title = 'Cụ nội (Ông Cố)';
-        if (grandFather.mid === p.id) p.kinship_title = 'Cụ nội (Bà Cố)';
-      }
+  if (paternalGrandFather) paternalGrandFather.kinship_title = 'Ông nội';
+  if (paternalGrandMother) paternalGrandMother.kinship_title = 'Bà nội';
+  if (maternalGrandFather) maternalGrandFather.kinship_title = 'Ông ngoại';
+  if (maternalGrandMother) maternalGrandMother.kinship_title = 'Bà ngoại';
+
+  // 6. Cụ / Cố (Cha Mẹ của Ông Nội / Bà Nội)
+  const grandParents = [paternalGrandFather, paternalGrandMother, maternalGrandFather, maternalGrandMother].filter(Boolean);
+  grandParents.forEach(gp => {
+    if (gp.fid && map.has(gp.fid)) {
+      map.get(gp.fid).kinship_title = gp.id === paternalGrandFather?.id || gp.id === paternalGrandMother?.id 
+        ? 'Cụ nội (Ông Cố)' 
+        : 'Cụ ngoại (Ông Cố)';
+    }
+    if (gp.mid && map.has(gp.mid)) {
+      map.get(gp.mid).kinship_title = gp.id === paternalGrandFather?.id || gp.id === paternalGrandMother?.id 
+        ? 'Cụ nội (Bà Cố)' 
+        : 'Cụ ngoại (Bà Cố)';
     }
   });
 
-  // 6. Anh / Chị / Em ruột
-  persons.forEach(p => {
-    if (p.id !== focusId && ((father && p.fid === father.id) || (mother && p.mid === mother.id))) {
+  // 7. Anh / Chị / Em ruột
+  normalizedPersons.forEach(p => {
+    if (p.id !== targetId && ((father && p.fid === father.id) || (mother && p.mid === mother.id))) {
       if (!p.kinship_title) {
         p.kinship_title = p.gender === 'female' ? 'Chị / Em gái' : 'Anh / Em trai';
       }
     }
   });
 
-  // 7. Bác / Chú / Cô / Cậu / Dì & Thím / Mợ / Dượng
-  if (father) {
-    persons.forEach(p => {
-      // Anh/Chị/Em của Cha
-      if (p.id !== father.id && (p.fid === father.fid || p.mid === father.mid) && p.fid) {
+  // 8. Chú / Bác / Cô (Anh em bên Nội)
+  if (father && (father.fid || father.mid)) {
+    normalizedPersons.forEach(p => {
+      const isFatherSibling = p.id !== father.id && 
+        ((father.fid && p.fid === father.fid) || (father.mid && p.mid === father.mid));
+
+      if (isFatherSibling) {
         if (!p.kinship_title) {
           p.kinship_title = p.gender === 'female' ? 'Cô / Bác gái' : 'Chú / Bác';
         }
-        // Vợ của Chú/Bác (Thím / Bác gái)
-        const unclePids = Array.isArray(p.pids) ? p.pids : [];
-        unclePids.forEach((wifeId: number) => {
-          const wife = map.get(wifeId);
-          if (wife && !wife.kinship_title) {
-            wife.kinship_title = p.gender === 'male' ? 'Thím / Bác gái' : 'Dượng';
+
+        // Vợ/Chồng của Chú/Bác/Cô (Thím, Dượng...)
+        getSpouses(p).forEach((sp: any) => {
+          if (!sp.kinship_title) {
+            sp.kinship_title = p.gender === 'male' ? 'Thím / Bác gái' : 'Dượng';
           }
         });
       }
     });
   }
 
-  // 8. Anh / Chị / Em họ (Con của Chú/Bác/Cô/Cậu/Dì)
-  persons.forEach(p => {
-    if (p.fid || p.mid) {
-      const parentOfP = map.get(p.fid) || map.get(p.mid);
-      if (parentOfP && (parentOfP.kinship_title?.includes('Chú') || parentOfP.kinship_title?.includes('Cô') || parentOfP.kinship_title?.includes('Bác'))) {
+  // 9. Cậu / Dì (Anh em bên Ngoại)
+  if (mother && (mother.fid || mother.mid)) {
+    normalizedPersons.forEach(p => {
+      const isMotherSibling = p.id !== mother.id && 
+        ((mother.fid && p.fid === mother.fid) || (mother.mid && p.mid === mother.mid));
+
+      if (isMotherSibling) {
         if (!p.kinship_title) {
-          p.kinship_title = 'Anh / Em họ';
+          p.kinship_title = p.gender === 'female' ? 'Dì' : 'Cậu';
         }
+
+        getSpouses(p).forEach((sp: any) => {
+          if (!sp.kinship_title) {
+            sp.kinship_title = p.gender === 'male' ? 'Mợ' : 'Dượng';
+          }
+        });
+      }
+    });
+  }
+
+  // 10. Anh / Chị / Em họ (Con của Chú/Bác/Cô/Cậu/Dì)
+  normalizedPersons.forEach(p => {
+    if (!p.kinship_title && (p.fid || p.mid)) {
+      const pFather = p.fid ? map.get(p.fid) : null;
+      const pMother = p.mid ? map.get(p.mid) : null;
+      const parentTitle = pFather?.kinship_title || pMother?.kinship_title || '';
+
+      const validParentTitles = ['Chú / Bác', 'Cô / Bác gái', 'Cậu', 'Dì', 'Thím / Bác gái', 'Mợ', 'Dượng'];
+      if (validParentTitles.some(t => parentTitle.includes(t))) {
+        p.kinship_title = p.gender === 'female' ? 'Chị / Em họ' : 'Anh / Em họ';
       }
     }
   });
 
-  // 9. Con đẻ
-  persons.forEach(p => {
-    if (p.fid === focusId || p.mid === focusId) {
+  // 11. Con đẻ
+  normalizedPersons.forEach(p => {
+    if (p.fid === targetId || p.mid === targetId) {
       p.kinship_title = p.gender === 'female' ? 'Con gái' : 'Con trai';
     }
   });
 
-  // 10. Cháu (Nội / Ngoại)
-  persons.forEach(p => {
-    if (p.fid || p.mid) {
-      const parent = map.get(p.fid) || map.get(p.mid);
-      if (parent && (parent.fid === focusId || parent.mid === focusId)) {
+  // 12. Cháu
+  normalizedPersons.forEach(p => {
+    if (!p.kinship_title && (p.fid || p.mid)) {
+      const pFather = p.fid ? map.get(p.fid) : null;
+      const pMother = p.mid ? map.get(p.mid) : null;
+      if ((pFather && (pFather.fid === targetId || pFather.mid === targetId)) || 
+          (pMother && (pMother.fid === targetId || pMother.mid === targetId))) {
         p.kinship_title = 'Cháu';
       }
     }
