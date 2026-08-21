@@ -21,10 +21,11 @@ export default function Home() {
     fetchPersons();
   }, []);
 
-  const processedNodes = React.useMemo(() => {
+const processedNodes = React.useMemo(() => {
     let list = persons;
     if (focusPersonId) {
-      list = calculateKinship(focusPersonId, persons);
+      // Thêm "|| persons" hoặc "|| []" để TypeScript hiểu kết quả trả về chắc chắn là mảng
+      list = calculateKinship(focusPersonId, persons) || persons;
     }
 
     return list.map(node => ({
