@@ -1,16 +1,15 @@
 'use client';
 import React, { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { useRouter } from 'next/navigation';
 
 interface SidebarProps {
   persons: any[];
   focusPersonId: number | null;
   onSelectFocusPerson: (id: number | null) => void;
+  onRefresh?: () => void; // Hàm làm mới lại danh sách trên UI
 }
 
-export default function Sidebar({ persons, focusPersonId, onSelectFocusPerson }: SidebarProps) {
-  const router = useRouter();
+export default function Sidebar({ persons, focusPersonId, onSelectFocusPerson, onRefresh }: SidebarProps) {
   const [activeTab, setActiveTab] = useState<'add' | 'update-avatar' | 'delete' | 'kinship'>('add');
   const [loading, setLoading] = useState(false);
 
@@ -22,7 +21,7 @@ export default function Sidebar({ persons, focusPersonId, onSelectFocusPerson }:
     fid: '', 
     mid: '', 
     spouse_id: '', 
-    child_id: '', // Bổ sung trường chọn con đẻ
+    child_id: '',
     occupation: ''
   });
 
@@ -31,7 +30,16 @@ export default function Sidebar({ persons, focusPersonId, onSelectFocusPerson }:
   const [updateFile, setUpdateFile] = useState<File | null>(null);
   const [deleteId, setDeleteId] = useState('');
 
-  // 1. Thêm thành viên mới + Tự động tính Đời + Liên kết 2 chiều
+  // LÀM MỚI DỮ LIỆU
+  const triggerRefresh = () => {
+    if (onRefresh) {
+      onRefresh();
+    } else {
+      window.location.reload();
+    }
+  };
+
+  // 1. Thêm thành viên mới
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -49,16 +57,12 @@ export default function Sidebar({ persons, focusPersonId, onSelectFocusPerson }:
       }
     }
 
-    // Ép kiểu các ID liên quan
     const fidNum = formData.fid ? parseInt(formData.fid) : null;
     const midNum = formData.mid ? parseInt(formData.mid) : null;
     const spouseIdNum = formData.spouse_id ? parseInt(formData.spouse_id) : null;
     const childIdNum = formData.child_id ? parseInt(formData.child_id) : null;
 
-    // -------------------------------------------------------------
-    // TÍNH NĂNG 1: TỰ ĐỘNG TÍNH SỐ ĐỜI (GENERATION)
-    // -------------------------------------------------------------
-    let assignedGeneration = 1; // Mặc định là Đời 1 nếu không chọn Cha/Mẹ
+    let assignedGeneration = 1;
     const parentId = fidNum || midNum;
     if (parentId) {
       const parentObj = persons.find(p => p.id === parentId);
@@ -69,21 +73,19 @@ export default function Sidebar({ persons, focusPersonId, onSelectFocusPerson }:
 
     const pidsArray = spouseIdNum ? [spouseIdNum] : [];
 
-    // Chèn thành viên mới vào Supabase
     let insertPayload: any = {
       name: formData.name,
       gender: formData.gender,
       fid: fidNum,
       mid: midNum,
       pids: pidsArray,
-      generation: assignedGeneration, // Gán đời tự động
+      generation: assignedGeneration,
       occupation: formData.occupation || null,
       img: avatarUrl
     };
 
     let { data: insertedData, error } = await supabase.from('persons').insert([insertPayload]).select();
 
-    // Lỗi dự phòng nếu Database chưa tạo cột generation
     if (error && error.message.includes('generation')) {
       delete insertPayload.generation;
       const res = await supabase.from('persons').insert([insertPayload]).select();
@@ -97,13 +99,9 @@ export default function Sidebar({ persons, focusPersonId, onSelectFocusPerson }:
       return;
     }
 
-    // -------------------------------------------------------------
-    // TÍNH NĂNG 2: LIÊN KẾT MỐI QUAN HỆ 2 CHIỀU VỚI THÀNH VIÊN CÓ SẴN
-    // -------------------------------------------------------------
     if (insertedData && insertedData[0]) {
       const newPersonId = insertedData[0].id;
 
-      // A. Cập nhật mảng pids cho Vợ/Chồng có sẵn
       if (spouseIdNum) {
         const spouseObj = persons.find(p => p.id === spouseIdNum);
         const existingPids = Array.isArray(spouseObj?.pids) ? spouseObj.pids : [];
@@ -115,7 +113,6 @@ export default function Sidebar({ persons, focusPersonId, onSelectFocusPerson }:
         }
       }
 
-      // B. Cập nhật fid/mid cho Con đẻ có sẵn
       if (childIdNum) {
         const updateField = formData.gender === 'male' ? { fid: newPersonId } : { mid: newPersonId };
         await supabase
@@ -126,12 +123,13 @@ export default function Sidebar({ persons, focusPersonId, onSelectFocusPerson }:
     }
 
     setLoading(false);
-    alert('Thêm thành viên và cập nhật liên kết thành công!');
+    alert('Thêm thành viên thành công!');
     setFormData({ name: '', gender: 'male', fid: '', mid: '', spouse_id: '', child_id: '', occupation: '' });
     setFile(null);
-    router.refresh();
+    triggerRefresh();
   };
 
+  // 2. Cập nhật ảnh đại diện
   const handleUpdateAvatar = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!updateAvatarId || !updateFile) return alert('Vui lòng chọn thành viên và ảnh!');
@@ -149,18 +147,33 @@ export default function Sidebar({ persons, focusPersonId, onSelectFocusPerson }:
     alert('Cập nhật ảnh thành công!');
     setUpdateAvatarId('');
     setUpdateFile(null);
-    router.refresh();
+    triggerRefresh();
   };
 
+  // 3. XÓA THÀNH VIÊN (ĐÃ SỬA LỖI)
   const handleDelete = async () => {
     if (!deleteId) return alert('Vui lòng chọn người cần xóa!');
-    if (confirm('Xác nhận xóa thành viên này?')) {
+    
+    if (confirm('Xác nhận xóa thành viên này khỏi cây gia phả?')) {
       setLoading(true);
-      await supabase.from('persons').delete().eq('id', parseInt(deleteId));
+      
+      const targetId = parseInt(deleteId);
+
+      // Thực hiện xóa trong Supabase
+      const { error } = await supabase.from('persons').delete().eq('id', targetId);
+
+      if (error) {
+        alert('Lỗi khi xóa thành viên từ Database: ' + error.message);
+        setLoading(false);
+        return;
+      }
+
       setLoading(false);
-      alert('Đã xóa thành công!');
+      alert('Đã xóa thành viên thành công!');
       setDeleteId('');
-      router.refresh();
+      
+      // Bắt buộc tải lại danh sách trên UI ngay lập tức
+      triggerRefresh();
     }
   };
 

@@ -8,7 +8,7 @@ import { calculateKinship } from '@/lib/kinship';
 export default function Home() {
   const [persons, setPersons] = useState<any[]>([]);
   const [focusPersonId, setFocusPersonId] = useState<number | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Trạng thái ẩn/hiện Sidebar
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const fetchPersons = async () => {
     const { data, error } = await supabase.from('persons').select('*');
@@ -36,51 +36,38 @@ export default function Home() {
   }, [persons, focusPersonId]);
 
   return (
-    <main style={{ padding: '20px', maxWidth: '1600px', margin: '0 auto' }}>
-      {/* TIÊU ĐỀ KHU VỰC VÀ NÚT BẤM ẨN/HIỆN SIDEBAR */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+    <main className="p-3 sm:p-5 max-w-[1600px] mx-auto">
+      <div className="flex items-center justify-center md:justify-between mb-4 relative min-h-[44px]">
         <button
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          style={{
-            padding: '8px 16px',
-            backgroundColor: '#ffffff',
-            color: '#1d4ed8',
-            border: '2px solid #D4A017',
-            borderRadius: '8px',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}
+          className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-blue-900 text-white border-2 border-[#D4A017] shadow-xl flex items-center justify-center font-bold cursor-pointer transition-all hover:scale-105 active:scale-95 md:static md:w-auto md:h-auto md:rounded-lg md:bg-white md:text-blue-700 md:px-4 md:py-2 md:text-sm md:shadow-sm"
         >
-          {isSidebarOpen ? '◀' : '☰'}
+          <span className="md:hidden text-2xl font-bold leading-none">
+            {isSidebarOpen ? '✕' : '+'}
+          </span>
+          <span className="hidden md:inline">
+            {isSidebarOpen ? '◀ Ẩn Thanh Quản Lý' : '☰ Hiện Thanh Quản Lý'}
+          </span>
         </button>
 
-        <h1 style={{
-          fontSize: '26px', fontWeight: 'bold', color: '#1e293b', margin: 0,
-          textShadow: '0 2px 4px rgba(255,255,255,0.8)'
-        }}>
+        <h1 className="text-[15px] sm:text-xl md:text-2xl font-bold text-slate-800 text-center whitespace-nowrap drop-shadow-sm mx-auto md:mx-0">
           SƠ ĐỒ CÂY GIA PHẢ DÒNG HỌ
         </h1>
 
-        <div style={{ width: '140px' }} /> {/* Spacer để căn giữa tiêu đề */}
+        <div className="hidden md:block w-[170px]" />
       </div>
 
-      {/* BỐ CỤC 2 CỘT */}
-      <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
-        {/* Cột Tab Điều Khiển Bên Trái (Co giãn theo biến isSidebarOpen) */}
+      <div className="flex flex-col md:flex-row gap-5 items-start">
         {isSidebarOpen && (
           <Sidebar
             persons={persons}
             focusPersonId={focusPersonId}
             onSelectFocusPerson={(id) => setFocusPersonId(id)}
+            onRefresh={fetchPersons} /* TRUYỀN HÀM NÀY ĐỂ TỰ ĐỘNG CẬP NHẬT GIAO DIỆN KHI XÓA/THÊM */
           />
         )}
 
-        {/* Cột Hiển Thị Cây Gia Phả Bên Phải */}
-        <div className="inner-tree-card" style={{ flex: 1, padding: '12px' }}>
+        <div className="inner-tree-card flex-1 p-3 w-full overflow-hidden">
           <FamilyTreeComponent nodes={processedNodes} />
         </div>
       </div>
