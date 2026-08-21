@@ -122,7 +122,6 @@ export function calculateKinship(focusId: number | string | null, persons: any[]
   // -------------------------------------------------------------
   // 5. CHÚ / BÁC / CÔ / CẬU / DÌ & THÍM / MỢ / DƯỢNG
   // -------------------------------------------------------------
-  // Bên Nội (Anh em của Bố)
   if (father && (father.fid || father.mid)) {
     normalizedPersons.forEach(p => {
       const isFatherSibling = p.id !== father.id && ((father.fid && p.fid === father.fid) || (father.mid && p.mid === father.mid));
@@ -145,7 +144,6 @@ export function calculateKinship(focusId: number | string | null, persons: any[]
     });
   }
 
-  // Bên Ngoại (Anh em của Mẹ)
   if (mother && (mother.fid || mother.mid)) {
     normalizedPersons.forEach(p => {
       const isMotherSibling = p.id !== mother.id && ((mother.fid && p.fid === mother.fid) || (mother.mid && p.mid === mother.mid));
@@ -180,55 +178,52 @@ export function calculateKinship(focusId: number | string | null, persons: any[]
       });
     }
   });
-// -------------------------------------------------------------
-// 7. CHÁU NỘI / NGOẠI / RUỘT / CỐ / ANH EM HỌ & DÂU / RỂ
-// -------------------------------------------------------------
-normalizedPersons.forEach(p => {
-  if (!p.kinship_title && (p.fid || p.mid)) {
-    const pFather = p.fid ? map.get(p.fid) : null;
-    const pMother = p.mid ? map.get(p.mid) : null;
-    
-    // Lấy tất cả danh xưng của cả Bố và Mẹ
-    const fatherTitle = pFather?.kinship_title || '';
-    const motherTitle = pMother?.kinship_title || '';
 
-    // 1. Cháu nội: Con của Con trai Hoặc Con của Con dâu
-    if (fatherTitle === 'Con trai' || motherTitle === 'Con dâu') {
-      p.kinship_title = 'Cháu nội';
-    } 
-    // 2. Cháu ngoại: Con của Con gái Hoặc Con của Con rể (Sửa triệt để lỗi của bạn ở đây)
-    else if (motherTitle === 'Con gái' || fatherTitle === 'Con rể') {
-      p.kinship_title = 'Cháu ngoại';
-    } 
-    // 3. Cháu cố
-    else if (['Cháu nội', 'Cháu ngoại'].includes(fatherTitle) || ['Cháu nội', 'Cháu ngoại'].includes(motherTitle)) {
-      p.kinship_title = 'Cháu cố';
-    }
-    // 4. Cháu ruột (Con của anh/chị/em)
-    else if (
-      ['Anh trai', 'Em trai', 'Chị gái', 'Em gái'].includes(fatherTitle) || 
-      ['Anh trai', 'Em trai', 'Chị gái', 'Em gái'].includes(motherTitle)
-    ) {
-      p.kinship_title = 'Cháu';
-    }
-    // 5. Anh / Em họ (Con của Chú/Bác/Cô/Cậu/Dì)
-    else {
-      const parentTitle = fatherTitle || motherTitle;
-      if (['Chú', 'Bác', 'Cô', 'Cậu', 'Dì', 'Thím', 'Mợ', 'Dượng', 'Bác gái'].includes(parentTitle)) {
-        if (['Bác', 'Bác gái'].includes(parentTitle)) {
-          p.kinship_title = p.gender === 'female' ? 'Chị họ' : 'Anh họ';
-        } else {
-          p.kinship_title = 'Em họ';
+  // -------------------------------------------------------------
+  // 7. CHÁU NỘI / NGOẠI / RUỘT / CỐ / ANH EM HỌ & DÂU / RỂ
+  // -------------------------------------------------------------
+  normalizedPersons.forEach(p => {
+    if (!p.kinship_title && (p.fid || p.mid)) {
+      const pFather = p.fid ? map.get(p.fid) : null;
+      const pMother = p.mid ? map.get(p.mid) : null;
+      
+      const fatherTitle = pFather?.kinship_title || '';
+      const motherTitle = pMother?.kinship_title || '';
+
+      if (fatherTitle === 'Con trai' || motherTitle === 'Con dâu') {
+        p.kinship_title = 'Cháu nội';
+      } 
+      else if (motherTitle === 'Con gái' || fatherTitle === 'Con rể') {
+        p.kinship_title = 'Cháu ngoại';
+      } 
+      else if (['Cháu nội', 'Cháu ngoại'].includes(fatherTitle) || ['Cháu nội', 'Cháu ngoại'].includes(motherTitle)) {
+        p.kinship_title = 'Cháu cố';
+      }
+      else if (
+        ['Anh trai', 'Em trai', 'Chị gái', 'Em gái'].includes(fatherTitle) || 
+        ['Anh trai', 'Em trai', 'Chị gái', 'Em gái'].includes(motherTitle)
+      ) {
+        p.kinship_title = 'Cháu';
+      }
+      else {
+        const parentTitle = fatherTitle || motherTitle;
+        if (['Chú', 'Bác', 'Cô', 'Cậu', 'Dì', 'Thím', 'Mợ', 'Dượng', 'Bác gái'].includes(parentTitle)) {
+          if (['Bác', 'Bác gái'].includes(parentTitle)) {
+            p.kinship_title = p.gender === 'female' ? 'Chị họ' : 'Anh họ';
+          } else {
+            p.kinship_title = 'Em họ';
+          }
         }
       }
-    }
 
-    // Gán danh xưng Cháu dâu / Cháu rể nếu có Vợ/Chồng
-    if (['Cháu nội', 'Cháu ngoại', 'Cháu'].includes(p.kinship_title)) {
-      getSpouses(p).forEach((sp: any) => {
-        sp.kinship_title = p.gender === 'female' ? 'Cháu rể' : 'Cháu dâu';
-      });
+      if (['Cháu nội', 'Cháu ngoại', 'Cháu'].includes(p.kinship_title)) {
+        getSpouses(p).forEach((sp: any) => {
+          sp.kinship_title = p.gender === 'female' ? 'Cháu rể' : 'Cháu dâu';
+        });
+      }
     }
-  }
-});
+  });
+
+  // BỔ SUNG QUAN TRỌNG: Trả về kết quả sau khi đã tính toán xong
+  return normalizedPersons;
 }
