@@ -1,0 +1,293 @@
+/* Sửa lỗi icon Balkan FamilyTreeJS bị lệch */
+svg {
+  display: inline !important;
+  vertical-align: middle !important;
+}
+
+/* Nền bên ngoài toàn bộ trang web */
+body {
+  background-image: url('/trong_dong.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+/* Nền bên trong khung Cây Gia Phả */
+.inner-tree-card {
+  background: linear-gradient(135deg, rgba(100, 233, 134, 0.2) 0%, rgba(212, 160, 23, 0.2) 100%);
+  backdrop-filter: blur(12px);
+  border-radius: 16px;
+  border: 2px solid #D4A017;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+/* Định dạng các ô (Node) thành viên bên trong Cây Gia Phả */
+[control-node-id] rect, .bft-node rect {
+  fill: #ffffff !important;
+  stroke: #D4A017 !important;
+  stroke-width: 2px !important;
+  rx: 8px !important;
+  ry: 8px !important;
+}
+
+/* Đổi màu chữ tên thành viên & danh xưng trên thẻ */
+[control-node-id] text {
+  fill: #1e293b !important;
+  font-weight: 600 !important;
+}
+
+/* Khung Sidebar bên trái */
+.sidebar-card {
+  background: #ffffff;
+  border-radius: 16px;
+  border-top: 5px solid #E2F516;
+  border-bottom: 5px solid #D4A017;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+/* =========================================================
+   1. ĐỔI MÀU CÁC THẺ THÀNH VIÊN TRÊN CÂY GIA PHẢ
+   ========================================================= */
+
+/* Ô Nam (Xanh lam -> #6AFB92) */
+.bft-node.male rect,
+[control-node-id].male rect,
+svg .male rect {
+  fill: #008000 !important;
+}
+
+/* Ô Nữ (Cam -> #D29F51) */
+.bft-node.female rect,
+[control-node-id].female rect,
+svg .female rect {
+  fill: #D29F51 !important;
+}
+
+/* Chỉnh màu chữ trên thẻ Nam sang màu tối để dễ đọc hơn trên nền sáng #6AFB92 */
+.bft-node.male text,
+[control-node-id].male text {
+  fill: #0f172a !important;
+}
+
+/* =========================================================
+   2. ĐỔI MÀU BẢNG THÔNG TIN CHI TIẾT BÊN PHẢI (SLIDE-OUT PANEL)
+   ========================================================= */
+
+/* Header bảng chi tiết dành cho Nam */
+.bft-edit-form.male .bft-edit-form-header,
+.bft-edit-form-header.male {
+  background-color: #008000 !important;
+  color: #0f172a !important;
+}
+
+/* Header bảng chi tiết dành cho Nữ */
+.bft-edit-form.female .bft-edit-form-header,
+.bft-edit-form-header.female {
+  background-color: #D29F51 !important;
+  color: #D29F51 !important;
+}
+
+/* Đổi màu các nút hình tròn (Sửa, Chia sẻ, Xuất PDF) */
+.bft-edit-form .bft-button,
+.bft-edit-form-header .bft-img-button {
+  background-color: #008000 !important;
+  border-color: #008000 !important;
+}
+
+.bft-edit-form.male .bft-button {
+  background-color: #008000 !important;
+}
+
+/* =========================================================
+   ĐỔI MÀU NỀN CÁC ICON TRÒN BÊN TRONG BẢNG THÔNG TIN (EDIT FORM)
+   ========================================================= */
+
+/* 1. MÀU ICON DÀNH CHO NAM (Mã màu #008000) */
+.bft-edit-form.male .bft-img-button,
+.bft-edit-form.male [data-btn-action],
+.bft-edit-form.male .bft-edit-form-header a,
+.bft-edit-form.male .bft-edit-form-header button {
+  background-color: #008000 !important;
+  border-color: #008000 !important;
+}
+
+/* Trường hợp icon vẽ bằng SVG Circle */
+.bft-edit-form.male .bft-edit-form-header circle,
+.bft-edit-form.male [data-btn-action] circle {
+  fill: #008000 !important;
+}
+
+/* 2. MÀU ICON DÀNH CHO NỮ (Mã màu #D29F51) */
+.bft-edit-form.female .bft-img-button,
+.bft-edit-form.female [data-btn-action],
+.bft-edit-form.female .bft-edit-form-header a,
+.bft-edit-form.female .bft-edit-form-header button {
+  background-color: #D29F51 !important;
+  border-color: #D29F51 !important;
+}
+
+/* Trường hợp icon vẽ bằng SVG Circle */
+.bft-edit-form.female .bft-edit-form-header circle,
+.bft-edit-form.female [data-btn-action] circle {
+  fill: #D29F51 !important;
+}
+
+
+/* 3. TÙY CHỈNH MÀU HÌNH/BIỂU TƯỢNG BÊN TRONG ICON (MÀU TRẮNG HOẶC TỰ CHỌN) */
+.bft-edit-form .bft-img-button svg,
+.bft-edit-form [data-btn-action] svg path {
+  fill: #D29F51 !important; /* Đổi màu biểu tượng bên trong thành màu trắng */
+}
+
+/* =========================================================
+   ĐỔI MÀU TẤM NỀN TRẮNG BÊN TRONG CÂY GIA PHẢ SANG #F1E5AC
+   ========================================================= */
+
+/* Đổi màu nền của khung chứa và thẻ SVG của Balkan FamilyTree */
+.inner-tree-card,
+.inner-tree-card svg,
+[control-familytree-id] {
+  background-color: #FBF6D9 !important;
+  background: #FBF6D9 !important;
+}
+
+/* Bo góc và làm nổi bật ô Tìm kiếm (Search) ở góc trên bên phải */
+.inner-tree-card input[type="text"],
+[control-search] input {
+  background-color: #ffffff !important;
+  border: 1.5px solid #FBF6D9 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+  outline: none !important;
+}
+
+/* =========================================================
+   1. ĐỔI MÀU NÚT BACK (MŨI TÊN BÊN GÓC TRÊN PHẢI)
+   ========================================================= */
+
+/* Nút Back dành cho Nam (Đổi mũi tên sang màu tối #0f172a để nổi bật trên nền #6AFB92) */
+.bft-edit-form.male .bft-edit-form-header [data-btn-action="close"] svg,
+.bft-edit-form.male .bft-edit-form-header .bft-edit-form-close svg,
+.bft-edit-form.male .bft-edit-form-header svg path {
+  fill: #0f172a !important;
+  stroke: #0f172a !important;
+}
+
+/* Nút Back dành cho Nữ (Mũi tên màu trắng #ffffff trên nền #D29F51) */
+.bft-edit-form.female .bft-edit-form-header [data-btn-action="close"] svg,
+.bft-edit-form.female .bft-edit-form-header .bft-edit-form-close svg,
+.bft-edit-form.female .bft-edit-form-header svg path {
+  fill: #FFFFFF !important;
+  stroke: #FFFFFF !important;
+}
+
+
+/* =========================================================
+   2. ĐỔI MÀU NỀN CỦA CÁC NÚT ICON TRÒN (SỬA, CHIA SẺ, PDF)
+   ========================================================= */
+
+/* Nền Icon Nam (#008000) */
+.bft-edit-form.male .bft-img-button,
+.bft-edit-form.male [data-btn-action]:not([data-btn-action="close"]) {
+  background-color: #008000 !important;
+  border-color: #008000 !important;
+}
+
+/* Nền Icon Nữ (#D29F51) */
+.bft-edit-form.female .bft-img-button,
+.bft-edit-form.female [data-btn-action]:not([data-btn-action="close"]) {
+  background-color: #D29F51 !important;
+  border-color: #D29F51 !important;
+}
+
+
+/* =========================================================
+   3. ĐỔI MÀU BIỂU TƯỢNG BÊN TRONG CÁC ICON & XÓA KHUNG Ô VUÔNG THỪA
+   ========================================================= */
+
+/* Màu hình vẽ/icon bên trong dành cho NAM (Màu tối) */
+.bft-edit-form.male .bft-img-button svg path,
+.bft-edit-form.male [data-btn-action]:not([data-btn-action="close"]) svg path {
+  fill: #0f172a !important;
+}
+
+/* Màu hình vẽ/icon bên trong dành cho NỮ (Màu trắng) */
+.bft-edit-form.female .bft-img-button svg path,
+.bft-edit-form.female [data-btn-action]:not([data-btn-action="close"]) svg path {
+  fill: #FFFFFF !important;
+}
+
+/* =========================================================
+   XÓA HOÀN TOÀN Ô VUÔNG THỪA BÊN TRONG CÁC NÚT ICON TRÒN
+   ========================================================= */
+
+/* 1. Đưa tất cả các phần tử con bên trong nút về dạng trong suốt */
+.bft-edit-form .bft-img-button *,
+.bft-edit-form [data-btn-action] *,
+.bft-edit-form-header a *,
+.bft-edit-form-header button * {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* 2. Trường hợp Icon là file ảnh (PNG/SVG): Dùng hòa trộn màu để làm trong suốt nền sáng của ảnh */
+.bft-edit-form .bft-img-button img,
+.bft-edit-form [data-btn-action] img {
+  background-color: transparent !important;
+  mix-blend-mode: multiply !important; /* Tự động loại bỏ nền màu sáng xung quanh icon */
+  object-fit: contain !important;
+}
+
+/* 3. Trường hợp Icon là dạng SVG có hình vuông bao quanh (<rect>): Ẩn khung vuông đó */
+.bft-edit-form .bft-img-button svg rect,
+.bft-edit-form [data-btn-action] svg rect {
+  fill: transparent !important;
+  stroke: transparent !important;
+}
+
+/* =========================================================
+   XÓA TRIỆT ĐỂ Ô VUÔNG THỪA Ở NÚT BACK / CLOSE (CẢ NAM & NỮ)
+   ========================================================= */
+
+/* 1. Xóa màu nền của nút Back và tất cả các thẻ phần tử bên trong nó */
+.bft-edit-form-header [data-btn-action="close"],
+.bft-edit-form-header .bft-edit-form-close,
+.bft-edit-form-header [data-btn-action="close"] *,
+.bft-edit-form-header .bft-edit-form-close * {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* 2. Nếu nút Back là hình vẽ SVG chứa khung ô vuông bên trong (<rect>), làm ẩn hoàn toàn khung đó */
+.bft-edit-form-header [data-btn-action="close"] svg rect,
+.bft-edit-form-header .bft-edit-form-close svg rect,
+.bft-edit-form-header svg [data-btn-action="close"] rect {
+  fill: transparent !important;
+  stroke: transparent !important;
+}
+
+/* 3. Đổi màu mũi tên Back cho nổi bật trên từng màu nền: */
+
+/* - Nút Back dành cho NAM (Nền xanh #6AFB92 -> Mũi tên màu tối #0f172a) */
+.bft-edit-form.male .bft-edit-form-header [data-btn-action="close"] svg path,
+.bft-edit-form.male .bft-edit-form-header .bft-edit-form-close svg path,
+.bft-edit-form.male .bft-edit-form-header [data-btn-action="close"] svg polygon {
+  fill: #0f172a !important;
+  stroke: #0f172a !important;
+}
+
+/* - Nút Back dành cho NỮ (Nền cam #D29F51 -> Mũi tên màu trắng #ffffff) */
+.bft-edit-form.female .bft-edit-form-header [data-btn-action="close"] svg path,
+.bft-edit-form.female .bft-edit-form-header .bft-edit-form-close svg path,
+.bft-edit-form.female .bft-edit-form-header [data-btn-action="close"] svg polygon {
+  fill: #ffffff !important;
+  stroke: #ffffff !important;
+}
