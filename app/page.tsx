@@ -21,7 +21,7 @@ export default function Home() {
     fetchPersons();
   }, []);
 
-const processedNodes = React.useMemo(() => {
+  const processedNodes = React.useMemo(() => {
     let list = persons;
     if (focusPersonId) {
       // Thêm "|| persons" hoặc "|| []" để TypeScript hiểu kết quả trả về chắc chắn là mảng
@@ -51,24 +51,22 @@ const processedNodes = React.useMemo(() => {
 
 
         {/* Khối Tab phụ (Sidebar) bên trái */}
-        {/* Khối Tab phụ (Sidebar) bên trái */}
-<div
-  className={`transition-all duration-300 ease-in-out flex-shrink-0 z-20 overflow-hidden ${
-    isSidebarOpen 
-      ? 'w-[360px] opacity-100 translate-x-0 mr-3' 
-      : 'w-0 opacity-0 -translate-x-6 pointer-events-none mr-0'
-  }`}
->
-  {/* Thẻ bên trong BẮT BUỘC có w-[360px] để nội dung không bị ép co rúm khi đang trượt */}
-  <div className="w-[360px]">
-    <Sidebar
-      persons={persons}
-      focusPersonId={focusPersonId}
-      onSelectFocusPerson={(id) => setFocusPersonId(id)}
-      onRefresh={fetchPersons}
-    />
-  </div>
-</div>
+        <div
+          className={`transition-all duration-300 ease-in-out flex-shrink-0 z-20 ${
+            isSidebarOpen 
+              ? 'w-[360px] opacity-100 translate-x-0' 
+              : 'w-0 opacity-0 -translate-x-10 pointer-events-none overflow-hidden'
+          }`}
+        >
+          <div className="w-[360px]">
+            <Sidebar
+              persons={persons}
+              focusPersonId={focusPersonId}
+              onSelectFocusPerson={(id) => setFocusPersonId(id)}
+              onRefresh={fetchPersons}
+            />
+          </div>
+        </div>
 
         {/* Bảng đồ gia phả luôn nằm bên phải Tab phụ */}
         <div className="flex-1 h-full min-w-0 bg-white rounded-2xl shadow-sm border border-slate-200 p-3 transition-all duration-300 overflow-hidden">
