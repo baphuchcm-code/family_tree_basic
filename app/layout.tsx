@@ -27,3 +27,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     </html>
   );
 }
+
+import type { Viewport } from 'next'
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false, // Tránh phóng to làm vỡ khung cây gia phả
+}
+

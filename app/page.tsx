@@ -55,7 +55,7 @@ export default function Home() {
             gap: '8px'
           }}
         >
-          {isSidebarOpen ? '◀ Ẩn Thanh Quản Lý' : '☰ Hiện Thanh Quản Lý'}
+          {isSidebarOpen ? '◀' : '☰'}
         </button>
 
         <h1 style={{

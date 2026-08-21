@@ -274,6 +274,7 @@ svg .female rect {
   stroke: transparent !important;
 }
 
+
 /* 3. Đổi màu mũi tên Back cho nổi bật trên từng màu nền: */
 
 /* - Nút Back dành cho NAM (Nền xanh #6AFB92 -> Mũi tên màu tối #0f172a) */
@@ -290,4 +291,109 @@ svg .female rect {
 .bft-edit-form.female .bft-edit-form-header [data-btn-action="close"] svg polygon {
   fill: #ffffff !important;
   stroke: #ffffff !important;
+}
+
+/* =========================================================
+   TỐI ƯU GIAO DIỆN DÀNH RIÊNG CHO ĐIỆN THOẠI (MOBILE < 768px)
+   ========================================================= */
+@media (max-width: 768px) {
+
+  /* 1. Bảng chỉnh sửa / Thông tin hiển thị tràn toàn màn hình (Full Screen) */
+  .bft-edit-form {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: 100% !important;
+    border-radius: 0 !important;
+    z-index: 9999 !important;
+    overflow-y: auto !important; /* Cho phép cuộn đứng nếu nội dung dài */
+  }
+
+  /* 2. Tăng kích thước khu vực bấm nút (Touch Target >= 44px) giúp ngón tay dễ chạm */
+  .bft-img-button,
+  .bft-edit-form [data-btn-action] {
+    min-width: 44px !important;
+    min-height: 44px !important;
+    margin: 0 4px !important;
+  }
+
+  /* 3. Tối ưu khung chứa Cây Gia Phả cho phép vuốt ngang/dọc mượt mà */
+  .family-tree-container,
+  #tree-container {
+    width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch; /* Cuộn mượt trên iOS Safari */
+    touch-action: pan-x pan-y;          /* Hỗ trợ thao tác chạm 2 ngón/vuốt */
+  }
+
+  /* 4. Điều chỉnh kích thước chữ tiêu đề và ô thông tin vừa mắt trên mobile */
+  .bft-edit-form input,
+  .bft-edit-form select,
+  .bft-edit-form button {
+    font-size: 16px !important; /* Tránh iOS tự động Zoom in khi bấm vào ô nhập liệu */
+    padding: 10px !important;
+  }
+}
+
+/* =========================================================
+   TỐI ƯU HEADER & NÚT QUẢN LÝ CHO ĐIỆN THOẠI (MOBILE < 768px)
+   ========================================================= */
+@media (max-width: 768px) {
+
+  /* 1. ĐIỀU CHỈNH TIÊU ĐỀ NẰM GỌN TRÊN 1 DÒNG, KHÔNG BỊ CHỒNG CHỮ */
+  .header-title, 
+  h1, 
+  .tree-header h1 {
+    font-size: clamp(14px, 4.2vw, 18px) !important; /* Tự động co giãn chữ theo màn hình */
+    white-space: nowrap !important;               /* Giữ văn bản trên 1 dòng duy nhất */
+    text-align: center !important;
+    margin: 12px auto !important;
+    padding: 0 10px !important;
+    width: 100% !important;
+    line-height: 1.3 !important;
+  }
+
+  /* 2. CHUYỂN NÚT "HIỆN THANH QUẢN LÝ" THÀNH NÚT TRÒN NỔI CỐ ĐỊNH (FAB) */
+  .toggle-btn,
+  button:has(svg),
+  .bft-edit-form-toggle,
+  [data-toggle-sidebar] {
+    position: fixed !important;
+    bottom: 24px !important;       /* Cố định ở góc dưới bên phải */
+    right: 20px !important;
+    top: auto !important;
+    left: auto !important;
+    width: 52px !important;        /* Kích thước nút tròn */
+    height: 52px !important;
+    border-radius: 50% !important; /* Tạo hình tròn */
+    background-color: #1e3a8a !important; /* Màu xanh đậm chủ đạo (hoặc đổi màu tùy ý) */
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
+    z-index: 9999 !important;      /* Luôn nổi trên cùng */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    border: 2px solid #ffffff !important;
+  }
+
+  /* 3. ĐỔI NỘI DUNG CHỮ THÀNH DẤU CỘNG (+), ẨN CÁC CHỮ THỪA */
+  .toggle-btn span,
+  button:has(svg) span,
+  .bft-edit-form-toggle span {
+    display: none !important;      /* Ẩn dòng chữ "Hiện Thanh Quản Lý" */
+  }
+
+  .toggle-btn::before,
+  button:has(svg)::before,
+  .bft-edit-form-toggle::before {
+    content: "+" !important;       /* Hiển thị dấu + */
+    font-size: 30px !important;
+    font-weight: bold !important;
+    line-height: 1 !important;
+    color: #ffffff !important;
+  }
 }
