@@ -1,130 +1,110 @@
-export interface PersonNode {
-  id: number;
-  name: string;
-  gender: string;
-  fid?: number | null;
-  mid?: number | null;
-  pids?: number[] | null;
-  [key: string]: any;
-}
-
-export function calculateKinship(focusId: number, nodes: PersonNode[]): PersonNode[] {
-  const nodeMap = new Map<number, PersonNode>();
-  nodes.forEach(n => nodeMap.set(n.id, n));
-
-  const focusNode = nodeMap.get(focusId);
-  if (!focusNode) return nodes;
-
-  const isFocusMale = focusNode.gender === 'male';
-
-  // 1. Tìm Vợ / Chồng của Focus
-  const spouseIds = new Set<number>();
-  if (Array.isArray(focusNode.pids)) {
-    focusNode.pids.forEach(id => spouseIds.add(id));
-  }
-  // Tìm thêm qua con chung
-  nodes.forEach(n => {
-    if (n.fid === focusId && n.mid) spouseIds.add(n.mid);
-    if (n.mid === focusId && n.fid) spouseIds.add(n.fid);
+export function calculateKinship(focusId: number, persons: any[]) {
+  // Tạo Map để tra cứu nhanh
+  const map = new Map<number, any>();
+  persons.forEach(p => {
+    map.set(p.id, { ...p, kinship_title: '' });
   });
 
-  const mainSpouseId = Array.from(spouseIds)[0] || null;
-  const mainSpouseNode = mainSpouseId ? nodeMap.get(mainSpouseId) : null;
+  const focus = map.get(focusId);
+  if (!focus) return persons;
 
-  return nodes.map(node => {
-    // A. BẢN THÂN
-    if (node.id === focusId) {
-      return { ...node, kinship_title: 'Bản thân' };
+  // 1. Bản thân
+  focus.kinship_title = 'Bản thân';
+
+  // 2. Vợ / Chồng
+  const pids = Array.isArray(focus.pids) ? focus.pids : [];
+  pids.forEach((spouseId: number) => {
+    const spouse = map.get(spouseId);
+    if (spouse) {
+      spouse.kinship_title = spouse.gender === 'female' ? 'Vợ' : 'Chồng';
     }
+  });
 
-    // B. VỢ / CHỒNG
-    if (spouseIds.has(node.id)) {
-      return { ...node, kinship_title: isFocusMale ? 'Vợ' : 'Chồng' };
-    }
+  // 3. Cha / Mẹ
+  const father = focus.fid ? map.get(focus.fid) : null;
+  const mother = focus.mid ? map.get(focus.mid) : null;
 
-    // C. CON ĐẺ (Cha = Focus hoặc Mẹ = Focus)
-    if (node.fid === focusId || node.mid === focusId) {
-      return {
-        ...node,
-        kinship_title: node.gender === 'male' ? 'Con trai' : 'Con gái'
-      };
-    }
+  if (father) father.kinship_title = 'Cha / Bố';
+  if (mother) mother.kinship_title = 'Mẹ';
 
-    // D. CHA / MẸ ĐẺ
-    if (node.id === focusNode.fid) return { ...node, kinship_title: 'Cha / Bố' };
-    if (node.id === focusNode.mid) return { ...node, kinship_title: 'Mẹ' };
+  // 4. Ông / Bà (Nội - Ngoại)
+  if (father) {
+    if (father.fid && map.has(father.fid)) map.get(father.fid).kinship_title = 'Ông nội';
+    if (father.mid && map.has(father.mid)) map.get(father.mid).kinship_title = 'Bà nội';
+  }
+  if (mother) {
+    if (mother.fid && map.has(mother.fid)) map.get(mother.fid).kinship_title = 'Ông ngoại';
+    if (mother.mid && map.has(mother.mid)) map.get(mother.mid).kinship_title = 'Bà ngoại';
+  }
 
-    // E. BỐ MẸ CỦA VỢ / CHỒNG (Bố chồng, Mẹ chồng, Bố vợ, Mẹ vợ)
-    if (mainSpouseNode) {
-      if (node.id === mainSpouseNode.fid) {
-        return { ...node, kinship_title: isFocusMale ? 'Bố vợ' : 'Bố chồng' };
+  // 5. Cụ / Cố (Ông/Bà của Cha hoặc Mẹ)
+  persons.forEach(p => {
+    if (father && father.fid) {
+      const grandFather = map.get(father.fid);
+      if (grandFather) {
+        if (grandFather.fid === p.id) p.kinship_title = 'Cụ nội (Ông Cố)';
+        if (grandFather.mid === p.id) p.kinship_title = 'Cụ nội (Bà Cố)';
       }
-      if (node.id === mainSpouseNode.mid) {
-        return { ...node, kinship_title: isFocusMale ? 'Mẹ vợ' : 'Mẹ chồng' };
+    }
+  });
+
+  // 6. Anh / Chị / Em ruột
+  persons.forEach(p => {
+    if (p.id !== focusId && ((father && p.fid === father.id) || (mother && p.mid === mother.id))) {
+      if (!p.kinship_title) {
+        p.kinship_title = p.gender === 'female' ? 'Chị / Em gái' : 'Anh / Em trai';
       }
     }
+  });
 
-    // F. ANH / CHỊ / EM CỦA VỢ HOẶC CHỒNG
-    if (mainSpouseNode && (mainSpouseNode.fid || mainSpouseNode.mid)) {
-      const isSpouseSibling = 
-        (mainSpouseNode.fid && node.fid === mainSpouseNode.fid) ||
-        (mainSpouseNode.mid && node.mid === mainSpouseNode.mid);
+  // 7. Bác / Chú / Cô / Cậu / Dì & Thím / Mợ / Dượng
+  if (father) {
+    persons.forEach(p => {
+      // Anh/Chị/Em của Cha
+      if (p.id !== father.id && (p.fid === father.fid || p.mid === father.mid) && p.fid) {
+        if (!p.kinship_title) {
+          p.kinship_title = p.gender === 'female' ? 'Cô / Bác gái' : 'Chú / Bác';
+        }
+        // Vợ của Chú/Bác (Thím / Bác gái)
+        const unclePids = Array.isArray(p.pids) ? p.pids : [];
+        unclePids.forEach((wifeId: number) => {
+          const wife = map.get(wifeId);
+          if (wife && !wife.kinship_title) {
+            wife.kinship_title = p.gender === 'male' ? 'Thím / Bác gái' : 'Dượng';
+          }
+        });
+      }
+    });
+  }
 
-      if (isSpouseSibling && node.id !== mainSpouseNode.id) {
-        const isMale = node.gender === 'male';
-        const isOlder = node.id < mainSpouseNode.id;
-
-        if (!isFocusMale) {
-          // Focus là Vợ -> Nhìn về nhà Chồng
-          if (isMale) return { ...node, kinship_title: isOlder ? 'Anh chồng' : 'Em chồng (Chú)' };
-          return { ...node, kinship_title: isOlder ? 'Chị chồng' : 'Em chồng (Cô)' };
-        } else {
-          // Focus là Chồng -> Nhìn về nhà Vợ
-          if (isMale) return { ...node, kinship_title: isOlder ? 'Anh vợ' : 'Em vợ (Cậu)' };
-          return { ...node, kinship_title: isOlder ? 'Chị vợ' : 'Em vợ (Dì)' };
+  // 8. Anh / Chị / Em họ (Con của Chú/Bác/Cô/Cậu/Dì)
+  persons.forEach(p => {
+    if (p.fid || p.mid) {
+      const parentOfP = map.get(p.fid) || map.get(p.mid);
+      if (parentOfP && (parentOfP.kinship_title?.includes('Chú') || parentOfP.kinship_title?.includes('Cô') || parentOfP.kinship_title?.includes('Bác'))) {
+        if (!p.kinship_title) {
+          p.kinship_title = 'Anh / Em họ';
         }
       }
     }
-
-    // G. ANH / CHỊ / EM ĐẺ (Cùng Bố/Mẹ với Focus)
-    const isDirectSibling = 
-      (focusNode.fid && node.fid === focusNode.fid) ||
-      (focusNode.mid && node.mid === focusNode.mid);
-
-    if (isDirectSibling) {
-      const isOlder = node.id < focusId;
-      if (node.gender === 'male') return { ...node, kinship_title: isOlder ? 'Anh trai' : 'Em trai' };
-      return { ...node, kinship_title: isOlder ? 'Chị gái' : 'Em gái' };
-    }
-
-    // H. CHÁU RUỘT (Con của Anh/Chị/Em)
-    if (node.fid || node.mid) {
-      const father = node.fid ? nodeMap.get(node.fid) : null;
-      const mother = node.mid ? nodeMap.get(node.mid) : null;
-      const parentIsFocusSibling = 
-        (father && ((focusNode.fid && father.fid === focusNode.fid) || (focusNode.mid && father.mid === focusNode.mid))) ||
-        (mother && ((focusNode.fid && mother.fid === focusNode.fid) || (focusNode.mid && mother.mid === focusNode.mid)));
-
-      if (parentIsFocusSibling) {
-        return { ...node, kinship_title: 'Cháu' };
-      }
-    }
-
-    // I. OÔNG BÀ NỘI / NGOẠI
-    if (focusNode.fid) {
-      const pFather = nodeMap.get(focusNode.fid);
-      if (pFather && (node.id === pFather.fid || node.id === pFather.mid)) {
-        return { ...node, kinship_title: node.gender === 'male' ? 'Ông nội' : 'Bà nội' };
-      }
-    }
-    if (focusNode.mid) {
-      const pMother = nodeMap.get(focusNode.mid);
-      if (pMother && (node.id === pMother.fid || node.id === pMother.mid)) {
-        return { ...node, kinship_title: node.gender === 'male' ? 'Ông ngoại' : 'Bà ngoại' };
-      }
-    }
-
-    // J. DÒNG HỌ / MẶC ĐỊNH
-    return { ...node, kinship_title: node.occupation || 'Họ hàng' };
   });
+
+  // 9. Con đẻ
+  persons.forEach(p => {
+    if (p.fid === focusId || p.mid === focusId) {
+      p.kinship_title = p.gender === 'female' ? 'Con gái' : 'Con trai';
+    }
+  });
+
+  // 10. Cháu (Nội / Ngoại)
+  persons.forEach(p => {
+    if (p.fid || p.mid) {
+      const parent = map.get(p.fid) || map.get(p.mid);
+      if (parent && (parent.fid === focusId || parent.mid === focusId)) {
+        p.kinship_title = 'Cháu';
+      }
+    }
+  });
+
+  return Array.from(map.values());
 }
