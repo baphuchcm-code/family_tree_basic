@@ -36,38 +36,45 @@ export default function Home() {
   }, [persons, focusPersonId]);
 
   return (
-    <main className="p-3 sm:p-5 max-w-[1600px] mx-auto">
-      <div className="flex items-center justify-center md:justify-between mb-4 relative min-h-[44px]">
+    <main className="p-3 sm:p-5 max-w-[1600px] mx-auto min-h-screen">
+      {/* Thanh Tiêu Đề Top Bar */}
+      <div className="flex items-center justify-between mb-4 relative min-h-[44px]">
+        {/* Nút bấm Đóng/Mở Sidebar thiết kế đồng bộ với dạng Tab Card */}
         <button
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-blue-900 text-white border-2 border-[#D4A017] shadow-xl flex items-center justify-center font-bold cursor-pointer transition-all hover:scale-105 active:scale-95 md:static md:w-auto md:h-auto md:rounded-lg md:bg-white md:text-blue-700 md:px-4 md:py-2 md:text-sm md:shadow-sm"
+          className="z-30 w-10 h-10 bg-white border border-gray-200 text-emerald-600 rounded-lg shadow-sm hover:shadow-md flex items-center justify-center font-bold text-xl cursor-pointer transition-all duration-200 hover:bg-emerald-50 active:scale-95"
+          title={isSidebarOpen ? 'Đóng thanh quản lý' : 'Mở thanh quản lý'}
         >
-          <span className="md:hidden text-2xl font-bold leading-none">
-            {isSidebarOpen ? '✕' : '+'}
-          </span>
-          <span className="hidden md:inline">
-            {isSidebarOpen ? '◀ ' : '☰ '}
-          </span>
+          {isSidebarOpen ? '<' : '+'}
         </button>
 
-        <h1 className="text-[15px] sm:text-xl md:text-2xl font-bold text-slate-800 text-center whitespace-nowrap drop-shadow-sm mx-auto md:mx-0">
+        <h1 className="text-[15px] sm:text-xl md:text-2xl font-bold text-slate-800 text-center whitespace-nowrap drop-shadow-sm mx-auto">
           SƠ ĐỒ CÂY GIA PHẢ DÒNG HỌ
         </h1>
 
-        <div className="hidden md:block w-[170px]" />
+        {/* Khoảng trống ẩn để cân bằng bố cục tiêu đề ở giữa */}
+        <div className="w-10" />
       </div>
 
-      <div className="flex flex-col md:flex-row gap-5 items-start">
-        {isSidebarOpen && (
+      <div className="flex flex-col md:flex-row gap-5 items-start relative">
+        {/* Container Sidebar bên trái tích hợp Hoạt ảnh (Animation) trượt đóng/mở */}
+        <div
+          className={`transition-all duration-300 ease-in-out overflow-hidden flex-shrink-0 ${
+            isSidebarOpen 
+              ? 'max-w-[340px] opacity-100 translate-x-0' 
+              : 'max-w-0 opacity-0 -translate-x-8 pointer-events-none'
+          }`}
+        >
           <Sidebar
             persons={persons}
             focusPersonId={focusPersonId}
             onSelectFocusPerson={(id) => setFocusPersonId(id)}
-            onRefresh={fetchPersons} /* TRUYỀN HÀM NÀY ĐỂ TỰ ĐỘNG CẬP NHẬT GIAO DIỆN KHI XÓA/THÊM */
+            onRefresh={fetchPersons}
           />
-        )}
+        </div>
 
-        <div className="inner-tree-card flex-1 p-3 w-full overflow-hidden">
+        {/* Khu vực hiển thị cây gia phả bên phải */}
+        <div className="inner-tree-card flex-1 p-3 w-full overflow-hidden transition-all duration-300">
           <FamilyTreeComponent nodes={processedNodes} />
         </div>
       </div>
