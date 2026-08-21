@@ -22,18 +22,19 @@ export default function Home() {
   }, []);
 
   const processedNodes = React.useMemo(() => {
-    let list = persons;
-    if (focusPersonId) {
-      list = calculateKinship(focusPersonId, persons);
-    }
+  let list = persons;
+  if (focusPersonId) {
+    list = calculateKinship(focusPersonId, persons);
+  }
 
-    return list.map(node => ({
-      ...node,
-      display_subtitle: node.kinship_title 
-        ? `[ ${node.kinship_title} ]` 
-        : (node.occupation || 'Thành viên')
-    }));
-  }, [persons, focusPersonId]);
+  return list.map(node => ({
+    ...node,
+    // Khi chọn người trung tâm, ưu tiên hiển thị danh xưng. Nếu người đó nằm ngoài phạm vi tính toán thì hiện [ Họ hàng ] thay vì lấy Nghề nghiệp
+    display_subtitle: node.kinship_title 
+      ? `[ ${node.kinship_title} ]` 
+      : (focusPersonId ? '[ Họ hàng ]' : (node.occupation ? `[ ${node.occupation} ]` : 'Thành viên'))
+  }));
+}, [persons, focusPersonId]);
 
   return (
     <main className="p-3 sm:p-5 max-w-[1600px] mx-auto min-h-screen">
