@@ -37,43 +37,58 @@ export default function Home() {
 
   return (
     <main className="p-3 sm:p-5 max-w-[1600px] mx-auto min-h-screen">
-      {/* Thanh Tiêu Đề Top Bar */}
-      <div className="flex items-center justify-between mb-4 relative min-h-[44px]">
-        {/* Nút bấm Đóng/Mở Sidebar thiết kế đồng bộ với dạng Tab Card */}
-        <button
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="z-30 w-10 h-10 bg-white border border-gray-200 text-emerald-600 rounded-lg shadow-sm hover:shadow-md flex items-center justify-center font-bold text-xl cursor-pointer transition-all duration-200 hover:bg-emerald-50 active:scale-95"
-          title={isSidebarOpen ? 'Đóng thanh quản lý' : 'Mở thanh quản lý'}
-        >
-          {isSidebarOpen ? '<' : '+'}
-        </button>
-
-        <h1 className="text-[15px] sm:text-xl md:text-2xl font-bold text-slate-800 text-center whitespace-nowrap drop-shadow-sm mx-auto">
+      {/* Tiêu đề chính của trang */}
+      <div className="mb-4 text-center">
+        <h1 className="text-lg sm:text-2xl font-bold text-slate-800 uppercase tracking-wide drop-shadow-sm">
           SƠ ĐỒ CÂY GIA PHẢ DÒNG HỌ
         </h1>
-
-        {/* Khoảng trống ẩn để cân bằng bố cục tiêu đề ở giữa */}
-        <div className="w-10" />
       </div>
 
-      <div className="flex flex-col md:flex-row gap-5 items-start relative">
-        {/* Container Sidebar bên trái tích hợp Hoạt ảnh (Animation) trượt đóng/mở */}
-        <div
-          className={`transition-all duration-300 ease-in-out overflow-hidden flex-shrink-0 ${
-            isSidebarOpen 
-              ? 'max-w-[340px] opacity-100 translate-x-0' 
-              : 'max-w-0 opacity-0 -translate-x-8 pointer-events-none'
-          }`}
-        >
-          <Sidebar
-            persons={persons}
-            focusPersonId={focusPersonId}
-            onSelectFocusPerson={(id) => setFocusPersonId(id)}
-            onRefresh={fetchPersons}
-          />
+      <div className="flex flex-col md:flex-row gap-3 items-start relative">
+        {/* Khối quản lý nằm bên trái bao gồm Nút Bấm thiết kế dạng Tab + Sidebar */}
+        <div className="flex items-start gap-2 flex-shrink-0 z-20">
+          {/* Nút bấm Ẩn/Hiện Tab: Đồng bộ thiết kế với các nút Tab (+ Thêm, Ảnh, Xóa...) */}
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            style={{
+              backgroundColor: '#f3f4f6',
+              color: isSidebarOpen ? '#dc2626' : '#059669',
+              border: '1px solid #d1d5db',
+              borderRadius: '8px',
+              padding: '8px 14px',
+              fontSize: '15px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+              transition: 'all 0.2s ease',
+            }}
+            className="hover:bg-gray-200 active:scale-95"
+            title={isSidebarOpen ? 'Đóng thanh quản lý' : 'Mở thanh quản lý'}
+          >
+            {isSidebarOpen ? '<' : '+'}
+          </button>
+
+          {/* Thanh Sidebar quản lý chứa hoạt ảnh trượt mượt mà (Slide & Fade) */}
+          <div
+            className={`transition-all duration-300 ease-in-out overflow-hidden ${
+              isSidebarOpen 
+                ? 'max-w-[340px] opacity-100 translate-x-0' 
+                : 'max-w-0 opacity-0 -translate-x-6 pointer-events-none'
+            }`}
+          >
+            <Sidebar
+              persons={persons}
+              focusPersonId={focusPersonId}
+              onSelectFocusPerson={(id) => setFocusPersonId(id)}
+              onRefresh={fetchPersons}
+            />
+          </div>
         </div>
 
-        {/* Khu vực hiển thị cây gia phả bên phải */}
+        {/* Bảng Sơ đồ Cây gia phả nằm cố định bên phải */}
         <div className="inner-tree-card flex-1 p-3 w-full overflow-hidden transition-all duration-300">
           <FamilyTreeComponent nodes={processedNodes} />
         </div>
