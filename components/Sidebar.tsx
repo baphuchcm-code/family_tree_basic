@@ -17,7 +17,13 @@ export default function Sidebar({ persons, focusPersonId, onSelectFocusPerson }:
   // Form Thêm
   const [file, setFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
-    name: '', gender: 'male', fid: '', mid: '', spouse_id: '', occupation: ''
+    name: '', 
+    gender: 'male', 
+    fid: '', 
+    mid: '', 
+    spouse_id: '', 
+    child_id: '', // Bổ sung trường chọn con đẻ
+    occupation: ''
   });
 
   // Form Đổi Ảnh & Xóa
@@ -25,7 +31,7 @@ export default function Sidebar({ persons, focusPersonId, onSelectFocusPerson }:
   const [updateFile, setUpdateFile] = useState<File | null>(null);
   const [deleteId, setDeleteId] = useState('');
 
-  // 1. Thêm thành viên mới + Kết nối Vợ/Chồng
+  // 1. Thêm thành viên mới + Tự động tính Đời + Liên kết 2 chiều
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -43,19 +49,47 @@ export default function Sidebar({ persons, focusPersonId, onSelectFocusPerson }:
       }
     }
 
-    // Lấy thông tin pids (Vợ/Chồng)
+    // Ép kiểu các ID liên quan
+    const fidNum = formData.fid ? parseInt(formData.fid) : null;
+    const midNum = formData.mid ? parseInt(formData.mid) : null;
     const spouseIdNum = formData.spouse_id ? parseInt(formData.spouse_id) : null;
+    const childIdNum = formData.child_id ? parseInt(formData.child_id) : null;
+
+    // -------------------------------------------------------------
+    // TÍNH NĂNG 1: TỰ ĐỘNG TÍNH SỐ ĐỜI (GENERATION)
+    // -------------------------------------------------------------
+    let assignedGeneration = 1; // Mặc định là Đời 1 nếu không chọn Cha/Mẹ
+    const parentId = fidNum || midNum;
+    if (parentId) {
+      const parentObj = persons.find(p => p.id === parentId);
+      if (parentObj && parentObj.generation) {
+        assignedGeneration = Number(parentObj.generation) + 1;
+      }
+    }
+
     const pidsArray = spouseIdNum ? [spouseIdNum] : [];
 
-    const { data: insertedData, error } = await supabase.from('persons').insert([{
+    // Chèn thành viên mới vào Supabase
+    let insertPayload: any = {
       name: formData.name,
       gender: formData.gender,
-      fid: formData.fid ? parseInt(formData.fid) : null,
-      mid: formData.mid ? parseInt(formData.mid) : null,
+      fid: fidNum,
+      mid: midNum,
       pids: pidsArray,
+      generation: assignedGeneration, // Gán đời tự động
       occupation: formData.occupation || null,
       img: avatarUrl
-    }]).select();
+    };
+
+    let { data: insertedData, error } = await supabase.from('persons').insert([insertPayload]).select();
+
+    // Lỗi dự phòng nếu Database chưa tạo cột generation
+    if (error && error.message.includes('generation')) {
+      delete insertPayload.generation;
+      const res = await supabase.from('persons').insert([insertPayload]).select();
+      insertedData = res.data;
+      error = res.error;
+    }
 
     if (error) {
       alert('Lỗi khi thêm thành viên: ' + error.message);
@@ -63,22 +97,37 @@ export default function Sidebar({ persons, focusPersonId, onSelectFocusPerson }:
       return;
     }
 
-    // Nếu có chọn Vợ/Chồng, cập nhật pids ngược lại cho người phối ngẫu
-    if (spouseIdNum && insertedData && insertedData[0]) {
+    // -------------------------------------------------------------
+    // TÍNH NĂNG 2: LIÊN KẾT MỐI QUAN HỆ 2 CHIỀU VỚI THÀNH VIÊN CÓ SẴN
+    // -------------------------------------------------------------
+    if (insertedData && insertedData[0]) {
       const newPersonId = insertedData[0].id;
-      const spouseObj = persons.find(p => p.id === spouseIdNum);
-      const existingPids = Array.isArray(spouseObj?.pids) ? spouseObj.pids : [];
-      if (!existingPids.includes(newPersonId)) {
+
+      // A. Cập nhật mảng pids cho Vợ/Chồng có sẵn
+      if (spouseIdNum) {
+        const spouseObj = persons.find(p => p.id === spouseIdNum);
+        const existingPids = Array.isArray(spouseObj?.pids) ? spouseObj.pids : [];
+        if (!existingPids.includes(newPersonId)) {
+          await supabase
+            .from('persons')
+            .update({ pids: [...existingPids, newPersonId] })
+            .eq('id', spouseIdNum);
+        }
+      }
+
+      // B. Cập nhật fid/mid cho Con đẻ có sẵn
+      if (childIdNum) {
+        const updateField = formData.gender === 'male' ? { fid: newPersonId } : { mid: newPersonId };
         await supabase
           .from('persons')
-          .update({ pids: [...existingPids, newPersonId] })
-          .eq('id', spouseIdNum);
+          .update(updateField)
+          .eq('id', childIdNum);
       }
     }
 
     setLoading(false);
-    alert('Thêm thành viên thành công!');
-    setFormData({ name: '', gender: 'male', fid: '', mid: '', spouse_id: '', occupation: '' });
+    alert('Thêm thành viên và cập nhật liên kết thành công!');
+    setFormData({ name: '', gender: 'male', fid: '', mid: '', spouse_id: '', child_id: '', occupation: '' });
     setFile(null);
     router.refresh();
   };
@@ -155,6 +204,13 @@ export default function Sidebar({ persons, focusPersonId, onSelectFocusPerson }:
           <div>
             <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Mẹ đẻ:</label>
             <select value={formData.mid} onChange={e => setFormData({ ...formData, mid: e.target.value })} style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ccc' }}>
+              <option value="">-- Không chọn --</option>
+              {persons.map(p => <option key={p.id} value={p.id}>{p.name} (ID: {p.id})</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Con đẻ (Nếu có):</label>
+            <select value={formData.child_id} onChange={e => setFormData({ ...formData, child_id: e.target.value })} style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ccc' }}>
               <option value="">-- Không chọn --</option>
               {persons.map(p => <option key={p.id} value={p.id}>{p.name} (ID: {p.id})</option>)}
             </select>
