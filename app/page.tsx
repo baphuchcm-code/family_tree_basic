@@ -8,7 +8,6 @@ import { calculateKinship } from '@/lib/kinship';
 export default function Home() {
   const [persons, setPersons] = useState<any[]>([]);
   const [focusPersonId, setFocusPersonId] = useState<number | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const fetchPersons = async () => {
     const { data, error } = await supabase.from('persons').select('*');
@@ -22,75 +21,43 @@ export default function Home() {
   }, []);
 
   const processedNodes = React.useMemo(() => {
-  let list = persons;
-  if (focusPersonId) {
-    list = calculateKinship(focusPersonId, persons);
-  }
+    let list = persons;
+    if (focusPersonId) {
+      list = calculateKinship(focusPersonId, persons);
+    }
 
-  return list.map(node => ({
-    ...node,
-    // Khi chọn người trung tâm, ưu tiên hiển thị danh xưng. Nếu người đó nằm ngoài phạm vi tính toán thì hiện [ Họ hàng ] thay vì lấy Nghề nghiệp
-    display_subtitle: node.kinship_title 
-      ? `[ ${node.kinship_title} ]` 
-      : (focusPersonId ? '[ Họ hàng ]' : (node.occupation ? `[ ${node.occupation} ]` : 'Thành viên'))
-  }));
-}, [persons, focusPersonId]);
+    return list.map(node => ({
+      ...node,
+      // Khi chọn người trung tâm, ưu tiên hiển thị danh xưng. Nếu người đó nằm ngoài phạm vi tính toán thì hiện [ Họ hàng ] thay vì lấy Nghề nghiệp
+      display_subtitle: node.kinship_title 
+        ? `[ ${node.kinship_title} ]` 
+        : (focusPersonId ? '[ Họ hàng ]' : (node.occupation ? `[ ${node.occupation} ]` : 'Thành viên'))
+    }));
+  }, [persons, focusPersonId]);
 
   return (
-    <main className="p-3 sm:p-5 max-w-[1600px] mx-auto min-h-screen">
-      {/* Tiêu đề chính của trang */}
-      <div className="mb-4 text-center">
-        <h1 className="text-lg sm:text-2xl font-bold text-slate-800 uppercase tracking-wide drop-shadow-sm">
+    <main className="min-h-screen w-full flex flex-col items-center justify-start p-3 sm:p-6 bg-slate-50 overflow-x-hidden">
+      {/* 1. Tiêu đề chương trình - Căn giữa hoàn toàn */}
+      <header className="w-full max-w-4xl text-center my-4 sm:my-6">
+        <h1 className="text-xl sm:text-3xl md:text-4xl font-extrabold text-slate-800 uppercase tracking-wide drop-shadow-sm">
           SƠ ĐỒ CÂY GIA PHẢ DÒNG HỌ
         </h1>
-      </div>
+      </header>
 
-      <div className="flex flex-col md:flex-row gap-3 items-start relative">
-        {/* Khối quản lý nằm bên trái bao gồm Nút Bấm thiết kế dạng Tab + Sidebar */}
-        <div className="flex items-start gap-2 flex-shrink-0 z-20">
-          {/* Nút bấm Ẩn/Hiện Tab: Đồng bộ thiết kế với các nút Tab (+ Thêm, Ảnh, Xóa...) */}
-          <button
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            style={{
-              backgroundColor: '#f3f4f6',
-              color: isSidebarOpen ? '#dc2626' : '#059669',
-              border: '1px solid #d1d5db',
-              borderRadius: '8px',
-              padding: '8px 14px',
-              fontSize: '15px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              transition: 'all 0.2s ease',
-            }}
-            className="hover:bg-gray-200 active:scale-95"
-            title={isSidebarOpen ? 'Đóng thanh quản lý' : 'Mở thanh quản lý'}
-          >
-            {isSidebarOpen ? '<' : '+'}
-          </button>
-
-          {/* Thanh Sidebar quản lý chứa hoạt ảnh trượt mượt mà (Slide & Fade) */}
-          <div
-            className={`transition-all duration-300 ease-in-out overflow-hidden ${
-              isSidebarOpen 
-                ? 'max-w-[340px] opacity-100 translate-x-0' 
-                : 'max-w-0 opacity-0 -translate-x-6 pointer-events-none'
-            }`}
-          >
-            <Sidebar
-              persons={persons}
-              focusPersonId={focusPersonId}
-              onSelectFocusPerson={(id) => setFocusPersonId(id)}
-              onRefresh={fetchPersons}
-            />
-          </div>
+      {/* 2. Cấu trúc bố cục chính */}
+      <div className="w-full max-w-[1600px] flex flex-col items-center gap-6">
+        {/* Khối quản lý (Tab Thêm / Sidebar) - Căn giữa màn hình trên mọi thiết bị */}
+        <div className="w-full max-w-md md:max-w-lg mx-auto z-20">
+          <Sidebar
+            persons={persons}
+            focusPersonId={focusPersonId}
+            onSelectFocusPerson={(id) => setFocusPersonId(id)}
+            onRefresh={fetchPersons}
+          />
         </div>
 
-        {/* Bảng Sơ đồ Cây gia phả nằm cố định bên phải */}
-        <div className="inner-tree-card flex-1 p-3 w-full overflow-hidden transition-all duration-300">
+        {/* Bảng Sơ đồ Cây gia phả */}
+        <div className="inner-tree-card w-full p-3 sm:p-5 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
           <FamilyTreeComponent nodes={processedNodes} />
         </div>
       </div>
