@@ -22,18 +22,24 @@ export default function Home() {
   }, []);
 
   const processedNodes = React.useMemo(() => {
-    let list = persons;
-    if (focusPersonId) {
-      list = calculateKinship(focusPersonId, persons) || persons;
-    }
+  let list = persons;
+  if (focusPersonId) {
+    list = calculateKinship(focusPersonId, persons) || persons;
+  }
 
-    return list.map(node => ({
+  return list.map(node => {
+    // Ưu tiên hiển thị Thứ bậc nếu có
+    const orderText = node.birth_order ? `(${node.birth_order}) ` : '';
+    const subtitleText = node.kinship_title 
+      ? `[ ${node.kinship_title} ]` 
+      : (focusPersonId ? '[ Họ hàng ]' : (node.occupation ? `[ ${node.occupation} ]` : 'Thành viên'));
+
+    return {
       ...node,
-      display_subtitle: node.kinship_title 
-        ? `[ ${node.kinship_title} ]` 
-        : (focusPersonId ? '[ Họ hàng ]' : (node.occupation ? `[ ${node.occupation} ]` : 'Thành viên'))
-    }));
-  }, [persons, focusPersonId]);
+      display_subtitle: `${orderText}${subtitleText}`
+    };
+  });
+}, [persons, focusPersonId]);
 
   return (
     <main className="min-h-screen w-full flex flex-col items-center py-6 px-4 gap-6 relative overflow-x-hidden">
