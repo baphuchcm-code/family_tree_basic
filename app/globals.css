@@ -13,11 +13,13 @@ body {
   background-repeat: no-repeat;
 }
 /* Nền bên trong khung Cây Gia Phả */
+/* Nền bên trong khung Cây Gia Phả */
 .inner-tree-card {
   background: linear-gradient(135deg, rgba(100, 233, 134, 0.2) 0%, rgba(212, 160, 23, 0.2) 100%);
   backdrop-filter: blur(12px);
   border-radius: 16px;
-  border: 2px solid #D4A017;
+  /* Chuyển viền sang trong suốt để nhường chỗ cho gradient bọc bên ngoài ở page.tsx */
+  border: none; 
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
   overflow: hidden;
   transition: all 0.3s ease;
@@ -396,4 +398,32 @@ svg .female rect {
     line-height: 1 !important;
     color: #ffffff !important;
   }
+
+  /* Bọc ngoài cùng: Sử dụng Flexbox để ép các phần tử con ra giữa */
+.center-wrapper {
+    display: flex;
+    flex-direction: column; /* Xếp tiêu đề ở trên, form ở dưới */
+    align-items: center;    /* Căn giữa theo chiều ngang */
+    justify-content: flex-start; 
+    width: 100%;            /* Chiếm toàn bộ chiều rộng màn hình */
+    min-height: 100vh;      /* Chiếm đủ chiều cao màn hình */
+    padding-top: 50px;      /* Đẩy khối xuống một chút cho thoáng */
+    position: relative;
+    z-index: 10;            /* Đảm bảo khối này nổi lên trên background Trống Đồng */
+}
+
+/* Căn giữa chữ của tiêu đề */
+.main-title {
+    text-align: center;
+    margin-bottom: 20px;
+    /* Bạn có thể thêm font-size, color, font-weight tùy ý ở đây */
+}
+
+/* Đảm bảo khối form có kích thước cố định và nằm giữa */
+.form-container {
+    width: 100%;
+    max-width: 450px;       /* Giới hạn độ rộng của khối form cho vừa mắt (như trong ảnh) */
+    background-color: white;/* Giữ màu nền trắng */
+    /* Bạn giữ nguyên các thuộc tính border, border-radius (bo góc viền vàng) hiện tại của bạn */
+}
 }

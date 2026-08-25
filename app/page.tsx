@@ -24,7 +24,6 @@ export default function Home() {
   const processedNodes = React.useMemo(() => {
     let list = persons;
     if (focusPersonId) {
-      // Thêm "|| persons" hoặc "|| []" để TypeScript hiểu kết quả trả về chắc chắn là mảng
       list = calculateKinship(focusPersonId, persons) || persons;
     }
 
@@ -37,42 +36,34 @@ export default function Home() {
   }, [persons, focusPersonId]);
 
   return (
-    <main className="min-h-screen w-full bg-slate-50 p-4 flex flex-col overflow-hidden">
+    <main className="min-h-screen w-full flex flex-col items-center py-6 px-4 gap-6 relative overflow-x-hidden">
       
-      {/* 1. Tiêu đề chương trình - Căn giữa tuyệt đối trên máy tính */}
-      <div className="w-full text-center py-3 mb-2">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800 uppercase tracking-wider drop-shadow-sm">
-          SƠ ĐỒ CÂY GIA PHẢ DÒNG HỌ
-        </h1>
-      </div>
+      {/* 1. Tiêu đề - Căn giữa */}
+      {/* ÉP TIÊU ĐỀ BẮT BUỘC RA GIỮA MÀN HÌNH BẰNG INLINE STYLE */}
+<div style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', paddingTop: '20px', paddingBottom: '10px' }}>
+  <h1 style={{ textAlign: 'center', width: '100%', margin: 0, fontSize: '28px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '2px', color: '#1e293b' }}>
+    SƠ ĐỒ CÂY GIA PHẢ DÒNG HỌ
+  </h1>
+</div>
 
-      {/* 2. Bố cục Ngang: Tab quản lý bên trái, Cây gia phả bên phải */}
-      <div className="flex-1 flex flex-row items-start gap-3 w-full h-full relative">
+      {/* 2. Tab chức năng - Chiếm 40% chiều rộng và nằm ở giữa */}
+      {/* BỌC SIDEBAR - ÉP CĂN GIỮA TUYỆT ĐỐI */}
+<div style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '20px 0', position: 'relative', zIndex: 20 }}>
+  <div style={{ width: '100%', maxWidth: '480px', margin: '0 auto' }}>
+    <Sidebar
+      persons={persons}
+      focusPersonId={focusPersonId}
+      onSelectFocusPerson={(id) => setFocusPersonId(id)}
+      onRefresh={fetchPersons}
+    />
+  </div>
+</div>
 
-
-        {/* Khối Tab phụ (Sidebar) bên trái */}
-        <div
-          className={`transition-all duration-300 ease-in-out flex-shrink-0 z-20 ${
-            isSidebarOpen 
-              ? 'w-[360px] opacity-100 translate-x-0' 
-              : 'w-0 opacity-0 -translate-x-10 pointer-events-none overflow-hidden'
-          }`}
-        >
-          <div className="w-[360px]">
-            <Sidebar
-              persons={persons}
-              focusPersonId={focusPersonId}
-              onSelectFocusPerson={(id) => setFocusPersonId(id)}
-              onRefresh={fetchPersons}
-            />
-          </div>
-        </div>
-
-        {/* Bảng đồ gia phả luôn nằm bên phải Tab phụ */}
-        <div className="flex-1 h-full min-w-0 bg-white rounded-2xl shadow-sm border border-slate-200 p-3 transition-all duration-300 overflow-hidden">
+      {/* 3. Bảng cây gia phả phía dưới - Viền Gradient #D29F51 -> #008000 */}
+      <div className="w-full flex-1 min-h-[600px] rounded-[18px] p-[3px] bg-gradient-to-r from-[#D29F51] to-[#008000] shadow-lg transition-all duration-300">
+        <div className="w-full h-full bg-white rounded-[15px] p-3 overflow-hidden flex flex-col">
           <FamilyTreeComponent nodes={processedNodes} />
         </div>
-
       </div>
 
     </main>
