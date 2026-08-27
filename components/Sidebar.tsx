@@ -27,7 +27,6 @@ function SearchableSelect({
 
   const selectedOption = options.find(o => String(o.id) === String(value));
 
-  // Cập nhật ô nhập khi thay đổi người được chọn
   useEffect(() => {
     if (selectedOption) {
       setSearchTerm(`${selectedOption.name}${selectedOption.birth_order ? ` (${selectedOption.birth_order})` : ''}`);
@@ -36,7 +35,6 @@ function SearchableSelect({
     }
   }, [value, options]);
 
-  // Đóng danh sách gợi ý khi click ra ngoài
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -47,7 +45,6 @@ function SearchableSelect({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Tìm kiếm gần đúng theo tên, thứ bậc hoặc ID
   const filteredOptions = options.filter(p => {
     const searchTarget = `${p.name} ${p.birth_order || ''} ${p.id}`.toLowerCase();
     return searchTarget.includes(searchTerm.toLowerCase());
@@ -162,7 +159,7 @@ function SearchableSelect({
 }
 
 export default function Sidebar({ persons, focusPersonId, onSelectFocusPerson, onRefresh }: SidebarProps) {
-  const [activeTab, setActiveTab] = useState<'add' | 'update-avatar' | 'update-order' | 'delete' | 'kinship'>('add');
+  const [activeTab, setActiveTab] = useState<'add' | 'edit' | 'update-avatar' | 'update-order' | 'delete' | 'kinship'>('add');
   const [loading, setLoading] = useState(false);
 
   // Form Thêm
@@ -178,8 +175,19 @@ export default function Sidebar({ persons, focusPersonId, onSelectFocusPerson, o
     birth_order: ''
   });
 
-  // Form Cập nhật Thứ bậc
+  // Form Sửa Thông Tin Toàn Diện (TÍNH NĂNG MỚI)
   const [editPersonId, setEditPersonId] = useState('');
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    gender: 'male',
+    fid: '',
+    mid: '',
+    spouse_id: '',
+    occupation: '',
+    birth_order: ''
+  });
+
+  // Form Cập nhật Thứ bậc
   const [editBirthOrder, setEditBirthOrder] = useState('');
 
   // Form Đổi Ảnh & Xóa
@@ -192,6 +200,28 @@ export default function Sidebar({ persons, focusPersonId, onSelectFocusPerson, o
       onRefresh();
     } else {
       window.location.reload();
+    }
+  };
+
+  // Nạp thông tin hiện tại vào form khi người dùng chọn thành viên cần sửa
+  const handleSelectPersonToEdit = (id: string) => {
+    setEditPersonId(id);
+    if (!id) {
+      setEditFormData({ name: '', gender: 'male', fid: '', mid: '', spouse_id: '', occupation: '', birth_order: '' });
+      return;
+    }
+
+    const found = persons.find(p => String(p.id) === String(id));
+    if (found) {
+      setEditFormData({
+        name: found.name || '',
+        gender: found.gender || 'male',
+        fid: found.fid ? String(found.fid) : '',
+        mid: found.mid ? String(found.mid) : '',
+        spouse_id: Array.isArray(found.pids) && found.pids.length > 0 ? String(found.pids[0]) : '',
+        occupation: found.occupation || '',
+        birth_order: found.birth_order || ''
+      });
     }
   };
 
@@ -286,7 +316,58 @@ export default function Sidebar({ persons, focusPersonId, onSelectFocusPerson, o
     triggerRefresh();
   };
 
-  // 2. Cập nhật thứ bậc
+  // 2. Cập nhật Thông tin Thành viên lên Supabase (TÍNH NĂNG MỚI)
+  const handleUpdatePerson = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editPersonId) return alert('Vui lòng chọn thành viên cần chỉnh sửa!');
+    setLoading(true);
+
+    const targetId = parseInt(editPersonId);
+    const fidNum = editFormData.fid ? parseInt(editFormData.fid) : null;
+    const midNum = editFormData.mid ? parseInt(editFormData.mid) : null;
+    const spouseIdNum = editFormData.spouse_id ? parseInt(editFormData.spouse_id) : null;
+
+    const updatePayload: any = {
+      name: editFormData.name,
+      gender: editFormData.gender,
+      fid: fidNum,
+      mid: midNum,
+      pids: spouseIdNum ? [spouseIdNum] : [],
+      occupation: editFormData.occupation || null,
+      birth_order: editFormData.birth_order || null
+    };
+
+    const { error } = await supabase
+      .from('persons')
+      .update(updatePayload)
+      .eq('id', targetId);
+
+    if (error) {
+      alert('Lỗi cập nhật thông tin: ' + error.message);
+      setLoading(false);
+      return;
+    }
+
+    // Cập nhật liên kết 2 chiều với Vợ/Chồng
+    if (spouseIdNum) {
+      const spouseObj = persons.find(p => p.id === spouseIdNum);
+      const existingPids = Array.isArray(spouseObj?.pids) ? spouseObj.pids : [];
+      if (!existingPids.includes(targetId)) {
+        await supabase
+          .from('persons')
+          .update({ pids: [...existingPids, targetId] })
+          .eq('id', spouseIdNum);
+      }
+    }
+
+    setLoading(false);
+    alert('Cập nhật thông tin thành viên thành công!');
+    setEditPersonId('');
+    setEditFormData({ name: '', gender: 'male', fid: '', mid: '', spouse_id: '', occupation: '', birth_order: '' });
+    triggerRefresh();
+  };
+
+  // 3. Cập nhật thứ bậc
   const handleUpdateBirthOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editPersonId) return alert('Vui lòng chọn thành viên!');
@@ -308,7 +389,7 @@ export default function Sidebar({ persons, focusPersonId, onSelectFocusPerson, o
     }
   };
 
-  // 3. Cập nhật ảnh
+  // 4. Cập nhật ảnh
   const handleUpdateAvatar = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!updateAvatarId || !updateFile) return alert('Vui lòng chọn thành viên và ảnh!');
@@ -329,7 +410,7 @@ export default function Sidebar({ persons, focusPersonId, onSelectFocusPerson, o
     triggerRefresh();
   };
 
-  // 4. Xóa thành viên
+  // 5. Xóa thành viên
   const handleDelete = async () => {
     if (!deleteId) return alert('Vui lòng chọn người cần xóa!');
     
@@ -352,10 +433,11 @@ export default function Sidebar({ persons, focusPersonId, onSelectFocusPerson, o
   };
 
   return (
-    <div className="sidebar-card" style={{ padding: '16px', width: '80%', maxWidth: '480px', margin: '0 auto' }}>
-      {/* 5 Thanh Tab chuyển đổi */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '4px', marginBottom: '16px', background: '#f3f4f6', padding: '4px', borderRadius: '8px' }}>
+    <div className="sidebar-card" style={{ padding: '16px', width: '100%', maxWidth: '560px', margin: '0 auto' }}>
+      {/* 6 Thanh Tab chuyển đổi */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '4px', marginBottom: '16px', background: '#f3f4f6', padding: '4px', borderRadius: '8px' }}>
         <button onClick={() => setActiveTab('add')} style={{ padding: '8px 2px', fontSize: '11px', fontWeight: 'bold', border: 'none', borderRadius: '6px', cursor: 'pointer', backgroundColor: activeTab === 'add' ? '#64E986' : 'transparent', color: activeTab === 'add' ? '#065f46' : '#4b5563' }}>+ Thêm</button>
+        <button onClick={() => setActiveTab('edit')} style={{ padding: '8px 2px', fontSize: '11px', fontWeight: 'bold', border: 'none', borderRadius: '6px', cursor: 'pointer', backgroundColor: activeTab === 'edit' ? '#f59e0b' : 'transparent', color: activeTab === 'edit' ? '#ffffff' : '#4b5563' }}>✏️ Sửa</button>
         <button onClick={() => setActiveTab('update-order')} style={{ padding: '8px 2px', fontSize: '11px', fontWeight: 'bold', border: 'none', borderRadius: '6px', cursor: 'pointer', backgroundColor: activeTab === 'update-order' ? '#8b5cf6' : 'transparent', color: activeTab === 'update-order' ? '#ffffff' : '#4b5563' }}>🏷️ Thứ Bậc</button>
         <button onClick={() => setActiveTab('update-avatar')} style={{ padding: '8px 2px', fontSize: '11px', fontWeight: 'bold', border: 'none', borderRadius: '6px', cursor: 'pointer', backgroundColor: activeTab === 'update-avatar' ? '#3b82f6' : 'transparent', color: activeTab === 'update-avatar' ? '#ffffff' : '#4b5563' }}>📷 Ảnh</button>
         <button onClick={() => setActiveTab('delete')} style={{ padding: '8px 2px', fontSize: '11px', fontWeight: 'bold', border: 'none', borderRadius: '6px', cursor: 'pointer', backgroundColor: activeTab === 'delete' ? '#dc2626' : 'transparent', color: activeTab === 'delete' ? '#ffffff' : '#4b5563' }}>✕ Xóa</button>
@@ -411,7 +493,62 @@ export default function Sidebar({ persons, focusPersonId, onSelectFocusPerson, o
         </form>
       )}
 
-      {/* Tab 2: SỬA THỨ BẬC */}
+      {/* Tab 2: SỬA THÔNG TIN THÀNH VIÊN (TÍNH NĂNG MỚI) */}
+      {activeTab === 'edit' && (
+        <form onSubmit={handleUpdatePerson} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <h4 style={{ margin: 0, color: '#d97706', fontSize: '15px', textAlign: 'center' }}>Sửa Thông Tin Thành Viên</h4>
+          <div>
+            <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Chọn thành viên cần sửa:</label>
+            <SearchableSelect 
+              options={persons} 
+              value={editPersonId} 
+              onChange={handleSelectPersonToEdit} 
+              placeholder="Gõ tên chọn người cần sửa..." 
+            />
+          </div>
+
+          {editPersonId && (
+            <>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Họ và tên (*):</label>
+                <input type="text" required value={editFormData.name} onChange={e => setEditFormData({ ...editFormData, name: e.target.value })} style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '12px' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Giới tính:</label>
+                <select value={editFormData.gender} onChange={e => setEditFormData({ ...editFormData, gender: e.target.value })} style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '12px' }}>
+                  <option value="male">Nam</option>
+                  <option value="female">Nữ</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Thứ bậc (VD: Anh cả, Con thứ...):</label>
+                <input type="text" value={editFormData.birth_order} onChange={e => setEditFormData({ ...editFormData, birth_order: e.target.value })} style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '12px' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Vợ / Chồng:</label>
+                <SearchableSelect options={persons.filter(p => String(p.id) !== editPersonId)} value={editFormData.spouse_id} onChange={(id) => setEditFormData({ ...editFormData, spouse_id: id })} placeholder="Gõ tên tìm Vợ / Chồng..." />
+              </div>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Cha đẻ:</label>
+                <SearchableSelect options={persons.filter(p => String(p.id) !== editPersonId)} value={editFormData.fid} onChange={(id) => setEditFormData({ ...editFormData, fid: id })} placeholder="Gõ tên tìm Cha đẻ..." />
+              </div>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Mẹ đẻ:</label>
+                <SearchableSelect options={persons.filter(p => String(p.id) !== editPersonId)} value={editFormData.mid} onChange={(id) => setEditFormData({ ...editFormData, mid: id })} placeholder="Gõ tên tìm Mẹ đẻ..." />
+              </div>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Nghề nghiệp:</label>
+                <input type="text" value={editFormData.occupation} onChange={e => setEditFormData({ ...editFormData, occupation: e.target.value })} style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '12px' }} />
+              </div>
+              <button type="submit" disabled={loading} style={{ padding: '8px', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', marginTop: '4px' }}>
+                {loading ? 'Đang cập nhật...' : 'Cập Nhật Lên SQL'}
+              </button>
+            </>
+          )}
+        </form>
+      )}
+
+      {/* Tab 3: SỬA THỨ BẬC */}
       {activeTab === 'update-order' && (
         <form onSubmit={handleUpdateBirthOrder} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <h4 style={{ margin: 0, color: '#7c3aed', fontSize: '15px', textAlign: 'center' }}>Sửa Thứ Bậc Thành Viên</h4>
@@ -444,7 +581,7 @@ export default function Sidebar({ persons, focusPersonId, onSelectFocusPerson, o
         </form>
       )}
 
-      {/* Tab 3: CẬP NHẬT ẢNH */}
+      {/* Tab 4: CẬP NHẬT ẢNH */}
       {activeTab === 'update-avatar' && (
         <form onSubmit={handleUpdateAvatar} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <h4 style={{ margin: 0, color: '#2563eb', fontSize: '15px', textAlign: 'center' }}>Cập Nhật Ảnh Thành Viên</h4>
@@ -462,7 +599,7 @@ export default function Sidebar({ persons, focusPersonId, onSelectFocusPerson, o
         </form>
       )}
 
-      {/* Tab 4: XÓA */}
+      {/* Tab 5: XÓA */}
       {activeTab === 'delete' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <h4 style={{ margin: 0, color: '#dc2626', fontSize: '15px', textAlign: 'center' }}>Xóa Thành Viên</h4>
@@ -476,7 +613,7 @@ export default function Sidebar({ persons, focusPersonId, onSelectFocusPerson, o
         </div>
       )}
 
-      {/* Tab 5: DANH XƯNG */}
+      {/* Tab 6: DANH XƯNG */}
       {activeTab === 'kinship' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <h4 style={{ margin: 0, color: '#b45309', fontSize: '15px', textAlign: 'center' }}>Tra Cứu Danh Xưng</h4>
