@@ -26,7 +26,7 @@ export default function FamilyTree3D({ persons = [], focusPersonId }: FamilyTree
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // 1. Thuật toán xác định Người được chọn & Người Thân Gần (Cha, Mẹ, Vợ/Chồng, Con, Anh/Chị/Em)
+  // 1. Thuật toán xác định Người được chọn & Người Thân Gần
   const { mainHighlightId, relativeIdsSet } = useMemo(() => {
     const activeId = selectedSearchId || focusPersonId || null;
     if (!activeId) return { mainHighlightId: null, relativeIdsSet: new Set<number>() };
@@ -38,16 +38,13 @@ export default function FamilyTree3D({ persons = [], focusPersonId }: FamilyTree
       const targetFid = target.fid ? Number(target.fid) : null;
       const targetMid = target.mid ? Number(target.mid) : null;
 
-      // Cha & Mẹ đẻ
       if (targetFid) relSet.add(targetFid);
       if (targetMid) relSet.add(targetMid);
 
-      // Vợ / Chồng
       if (Array.isArray(target.pids)) {
         target.pids.forEach((sId: any) => relSet.add(Number(sId)));
       }
 
-      // Con cái & Anh/Chị/Em ruột
       persons.forEach(p => {
         const pId = Number(p.id);
         if (pId === Number(activeId)) return;
@@ -55,12 +52,10 @@ export default function FamilyTree3D({ persons = [], focusPersonId }: FamilyTree
         const pFid = p.fid ? Number(p.fid) : null;
         const pMid = p.mid ? Number(p.mid) : null;
 
-        // Con cái
         if (pFid === Number(activeId) || pMid === Number(activeId)) {
           relSet.add(pId);
         }
 
-        // Anh / Chị / Em ruột (Chung cả Cha lẫn Mẹ)
         if (targetFid && targetMid && pFid === targetFid && pMid === targetMid) {
           relSet.add(pId);
         }
@@ -70,7 +65,7 @@ export default function FamilyTree3D({ persons = [], focusPersonId }: FamilyTree
     return { mainHighlightId: Number(activeId), relativeIdsSet: relSet };
   }, [selectedSearchId, focusPersonId, persons]);
 
-  // 2. Chuyển đổi dữ liệu persons thành Node và Link 3D (Bổ sung dây Anh/Chị/Em)
+  // 2. Chuyển đổi dữ liệu persons thành Node và Link 3D
   const graphData = useMemo(() => {
     const nodes: any[] = [];
     const links: any[] = [];
@@ -88,15 +83,12 @@ export default function FamilyTree3D({ persons = [], focusPersonId }: FamilyTree
         occupation: p.occupation
       });
 
-      // Liên kết Cha -> Con
       if (p.fid && validNodeIds.has(Number(p.fid))) {
         links.push({ source: Number(p.fid), target: currentId, type: 'parent-child', color: '#10b981' });
       }
-      // Liên kết Mẹ -> Con
       if (p.mid && validNodeIds.has(Number(p.mid))) {
         links.push({ source: Number(p.mid), target: currentId, type: 'parent-child', color: '#ec4899' });
       }
-      // Liên kết Vợ / Chồng
       if (Array.isArray(p.pids)) {
         p.pids.forEach((spouseId: any) => {
           const sId = Number(spouseId);
@@ -107,7 +99,6 @@ export default function FamilyTree3D({ persons = [], focusPersonId }: FamilyTree
       }
     });
 
-    // TỰ ĐỘNG NHẬN DIỆN LIÊN KẾT ANH / CHỊ / EM (Chung Cha và Mẹ)
     for (let i = 0; i < persons.length; i++) {
       for (let j = i + 1; j < persons.length; j++) {
         const p1 = persons[i];
@@ -117,7 +108,7 @@ export default function FamilyTree3D({ persons = [], focusPersonId }: FamilyTree
             const id1 = Number(p1.id);
             const id2 = Number(p2.id);
             if (validNodeIds.has(id1) && validNodeIds.has(id2)) {
-              links.push({ source: id1, target: id2, type: 'sibling', color: '#8b5cf6' }); // Màu tím
+              links.push({ source: id1, target: id2, type: 'sibling', color: '#8b5cf6' });
             }
           }
         }
@@ -274,8 +265,8 @@ export default function FamilyTree3D({ persons = [], focusPersonId }: FamilyTree
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: '650px', background: '#050b14', borderRadius: '15px', overflow: 'hidden' }}>
       
-      {/* THANH TÌM KIẾM NỔI */}
-      <div ref={searchContainerRef} style={{ position: 'absolute', top: '16px', left: '16px', zIndex: 10, width: '280px' }}>
+      {/* THANH TÌM KIẾM NỔI 3D (ĐÃ CHUYỂN LÊN GÓC TRÊN BÊN PHẢI) */}
+      <div ref={searchContainerRef} style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 10, width: '280px' }}>
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
           <input
             type="text"
@@ -323,10 +314,12 @@ export default function FamilyTree3D({ persons = [], focusPersonId }: FamilyTree
           )}
         </div>
 
+        {/* DANH SÁCH GỢI Ý MỞ XUỐNG PHÍA DƯỚI */}
         {isOpen && (
           <div style={{
             position: 'absolute',
             top: '100%',
+            bottom: 'auto',
             left: 0,
             right: 0,
             maxHeight: '220px',
@@ -334,7 +327,7 @@ export default function FamilyTree3D({ persons = [], focusPersonId }: FamilyTree
             backgroundColor: '#0f172a',
             border: '1px solid #334155',
             borderRadius: '8px',
-            marginTop: '4px',
+            marginTop: '6px',
             boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)',
             zIndex: 20
           }}>

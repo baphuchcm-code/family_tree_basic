@@ -433,7 +433,7 @@ export default function Sidebar({ persons, focusPersonId, onSelectFocusPerson, o
   };
 
   return (
-    <div className="sidebar-card" style={{ padding: '16px', width: '100%', maxWidth: '560px', margin: '0 auto' }}>
+    <div className="sidebar-card" style={{ padding: '16px', width: '100%', maxWidth: '480px', margin: '0 auto' }}>
       {/* 6 Thanh Tab chuyển đổi */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '4px', marginBottom: '16px', background: '#f3f4f6', padding: '4px', borderRadius: '8px' }}>
         <button onClick={() => setActiveTab('add')} style={{ padding: '8px 2px', fontSize: '11px', fontWeight: 'bold', border: 'none', borderRadius: '6px', cursor: 'pointer', backgroundColor: activeTab === 'add' ? '#64E986' : 'transparent', color: activeTab === 'add' ? '#065f46' : '#4b5563' }}>+ Thêm</button>

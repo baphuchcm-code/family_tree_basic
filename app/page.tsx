@@ -6,14 +6,14 @@ import FamilyTreeComponent from '@/components/FamilyTree';
 import Sidebar from '@/components/Sidebar';
 import { calculateKinship } from '@/lib/kinship';
 
-// Tải động Component 3D để tránh lỗi Render phía Server
+// Tải động Component 3D
 const FamilyTree3D = dynamic(() => import('@/components/FamilyTree3D'), { ssr: false });
 
 export default function Home() {
   const [persons, setPersons] = useState<any[]>([]);
   const [focusPersonId, setFocusPersonId] = useState<number | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [viewMode, setViewMode] = useState<'2D' | '3D'>('3D'); // Mặc định chế độ 3D
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mặc định tắt bảng chức năng
+  const [viewMode, setViewMode] = useState<'2D' | '3D'>('3D');
 
   const fetchPersons = async () => {
     const { data, error } = await supabase.from('persons').select('*');
@@ -36,34 +36,40 @@ export default function Home() {
   }, [persons, focusPersonId]);
 
   return (
-    <main className="min-h-screen w-full flex flex-col items-center py-6 px-4 gap-6 relative overflow-x-hidden">
+    <main className="w-screen h-screen relative overflow-hidden">
       
-      {/* Tiêu đề căn giữa tuyệt đối */}
-      <div style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-        <h1 style={{ textAlign: 'center', margin: 0, fontSize: '28px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '2px', color: '#1e293b' }}>
+      {/* Tiêu đề trang ở góc trên bên trái */}
+      <div style={{ position: 'fixed', top: '16px', left: '16px', zIndex: 40, pointerEvents: 'auto' }}>
+        <h1 style={{ margin: 0, fontSize: '20px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1px', color: '#1e293b', backgroundColor: 'rgba(255, 255, 255, 0.85)', backdropFilter: 'blur(8px)', padding: '8px 16px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
           SƠ ĐỒ CÂY GIA PHẢ DÒNG HỌ
         </h1>
       </div>
 
-      {/* Nút chuyển đổi 2D / 3D */}
-      <div style={{ display: 'flex', gap: '10px', zIndex: 30 }}>
+      {/* Cụm nút chuyển 2D/3D & Mở/Tắt Chức năng (ĐÃ CHUYỂN XUỐNG GÓC DƯỚI BÊN PHẢI) */}
+      <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 40, display: 'flex', gap: '10px', pointerEvents: 'auto' }}>
         <button
           onClick={() => setViewMode('2D')}
-          style={{ padding: '8px 16px', borderRadius: '6px', fontWeight: 'bold', border: 'none', cursor: 'pointer', backgroundColor: viewMode === '2D' ? '#059669' : '#e5e7eb', color: viewMode === '2D' ? '#fff' : '#374151' }}
+          style={{ padding: '8px 16px', borderRadius: '8px', fontWeight: 'bold', border: 'none', cursor: 'pointer', backgroundColor: viewMode === '2D' ? '#059669' : 'rgba(255, 255, 255, 0.85)', color: viewMode === '2D' ? '#fff' : '#374151', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
         >
           📄 Chế độ 2D
         </button>
         <button
           onClick={() => setViewMode('3D')}
-          style={{ padding: '8px 16px', borderRadius: '6px', fontWeight: 'bold', border: 'none', cursor: 'pointer', backgroundColor: viewMode === '3D' ? '#7c3aed' : '#e5e7eb', color: viewMode === '3D' ? '#fff' : '#374151' }}
+          style={{ padding: '8px 16px', borderRadius: '8px', fontWeight: 'bold', border: 'none', cursor: 'pointer', backgroundColor: viewMode === '3D' ? '#7c3aed' : 'rgba(255, 255, 255, 0.85)', color: viewMode === '3D' ? '#fff' : '#374151', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
         >
           🌐 Bản đồ 3D
         </button>
+        <button
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          style={{ padding: '8px 16px', borderRadius: '8px', fontWeight: 'bold', border: 'none', cursor: 'pointer', backgroundColor: isSidebarOpen ? '#dc2626' : '#d97706', color: '#ffffff', boxShadow: '0 2px 6px rgba(0,0,0,0.2)' }}
+        >
+          {isSidebarOpen ? '✖ Đóng Chức Năng' : '⚙️ Mở Chức Năng'}
+        </button>
       </div>
 
-      {/* Tab chức năng */}
-      <div style={{ width: '100%', display: 'flex', justifyContent: 'center', zIndex: 20 }}>
-        <div style={{ width: '100%', maxWidth: '480px', margin: '0 auto' }}>
+      {/* Tab chức năng hiển thị dạng bảng nổi (Hiển thị phía trên cụm nút điều khiển) */}
+      {isSidebarOpen && (
+        <div style={{ position: 'fixed', bottom: '80px', right: '24px', zIndex: 50, width: '90vw', maxWidth: '480px', maxHeight: '75vh', overflowY: 'auto', borderRadius: '16px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)' }}>
           <Sidebar
             persons={persons}
             focusPersonId={focusPersonId}
@@ -71,17 +77,15 @@ export default function Home() {
             onRefresh={fetchPersons}
           />
         </div>
-      </div>
+      )}
 
-      {/* Khung hiển thị Cây Gia Phả 2D hoặc Bản Đồ 3D */}
-      <div className="w-full flex-1 min-h-[650px] rounded-[18px] p-[3px] bg-gradient-to-r from-[#D29F51] to-[#008000] shadow-lg">
-        <div className="w-full h-full bg-white rounded-[15px] p-2 overflow-hidden flex flex-col">
-          {viewMode === '3D' ? (
-            <FamilyTree3D persons={persons} focusPersonId={focusPersonId} />
-          ) : (
-            <FamilyTreeComponent nodes={processedNodes} />
-          )}
-        </div>
+      {/* Cây Gia Phả tràn toàn bộ màn hình phía sau */}
+      <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0 }}>
+        {viewMode === '3D' ? (
+          <FamilyTree3D persons={persons} focusPersonId={focusPersonId} />
+        ) : (
+          <FamilyTreeComponent nodes={processedNodes} />
+        )}
       </div>
 
     </main>
