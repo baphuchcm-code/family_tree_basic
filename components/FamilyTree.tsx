@@ -1,40 +1,64 @@
 'use client';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import FamilyTree from '@balkangraph/familytree.js';
 
 interface FamilyTreeProps {
   nodes: any[];
 }
 
-export default function FamilyTreeComponent({ nodes }: FamilyTreeProps) {
+export interface FamilyTree2DRef {
+  exportPDF: () => void;
+  exportPNG: () => void;
+  exportSVG: () => void;
+}
+
+const FamilyTreeComponent = forwardRef<FamilyTree2DRef, FamilyTreeProps>(({ nodes }, ref) => {
   const divRef = useRef<HTMLDivElement>(null);
+  const familyInstanceRef = useRef<any>(null);
+
+  useImperativeHandle(ref, () => ({
+    exportPDF: () => {
+      if (familyInstanceRef.current) {
+        familyInstanceRef.current.exportPDF({ filename: 'Gia_Pha_2D.pdf', expandUI: true, fit: true });
+      }
+    },
+    exportPNG: () => {
+      if (familyInstanceRef.current) {
+        familyInstanceRef.current.exportPNG({ filename: 'Gia_Pha_2D.png', expandUI: true, fit: true });
+      }
+    },
+    exportSVG: () => {
+      if (familyInstanceRef.current) {
+        familyInstanceRef.current.exportSVG({ filename: 'Gia_Pha_2D.svg', expandUI: true, fit: true });
+      }
+    }
+  }));
 
   useEffect(() => {
     if (!divRef.current || !nodes || nodes.length === 0) return;
 
-    divRef.current.innerHTML = ''; // Làm sạch khung trước khi vẽ lại
+    divRef.current.innerHTML = '';
 
     const family = new FamilyTree(divRef.current, {
       nodes: nodes,
       nodeBinding: {
-        field_0: "name",            // Dòng 1: Họ tên
-        field_1: "display_subtitle",// Dòng 2: Nghề nghiệp HOẶC Thứ bậc xưng hô
-        img_0: "img"                // Ảnh đại diện
+        field_0: "name",
+        field_1: "display_subtitle",
+        img_0: "img"
       }
     });
 
-    // Hàm tách ô tìm kiếm ra khỏi container của Balkan JS và định vị cố định
+    familyInstanceRef.current = family;
+
     const relocateSearchBox = () => {
       const searchEl = (divRef.current?.querySelector('[control-search]') || 
                         document.querySelector('[control-search]')) as HTMLElement;
       
       if (searchEl) {
-        // Gắn ô tìm kiếm ra ngoài document.body để không bị ảnh hưởng bởi transform/zoom của sơ đồ
         if (searchEl.parentElement !== document.body) {
           document.body.appendChild(searchEl);
         }
 
-        // Ép vị trí cố định ở góc dưới bên trái màn hình
         searchEl.style.cssText = `
           position: fixed !important;
           bottom: 24px !important;
@@ -47,7 +71,6 @@ export default function FamilyTreeComponent({ nodes }: FamilyTreeProps) {
       }
     };
 
-    // 1. Tự động lắng nghe DOM bằng MutationObserver khi Balkan JS chèn nút tìm kiếm
     const observer = new MutationObserver(() => {
       relocateSearchBox();
     });
@@ -57,11 +80,9 @@ export default function FamilyTreeComponent({ nodes }: FamilyTreeProps) {
       subtree: true
     });
 
-    // 2. Chạy kiểm tra sau khoảng thời gian ngắn để đảm bảo không bị sót
     const timer1 = setTimeout(relocateSearchBox, 50);
     const timer2 = setTimeout(relocateSearchBox, 300);
 
-    // Dọn dẹp DOM khi chuyển trang/unmount component
     return () => {
       observer.disconnect();
       clearTimeout(timer1);
@@ -73,5 +94,26 @@ export default function FamilyTreeComponent({ nodes }: FamilyTreeProps) {
     };
   }, [nodes]);
 
-  return <div ref={divRef} style={{ width: '100%', height: '100%', background: 'transparent' }} />;
-}
+  return (
+    <>
+      {/* CSS đè trực tiếp để giới hạn kích thước Form chi tiết Balkan JS */}
+      <style jsx global>{`
+        .bft-edit-form, [control-node-menu] {
+          top: 70px !important;
+          bottom: 80px !important;
+          max-height: calc(100vh - 150px) !important;
+          right: 24px !important;
+          width: 360px !important;
+          max-width: 90vw !important;
+          overflow-y: auto !important;
+          border-radius: 12px !important;
+          box-shadow: 0 10px 25px rgba(0,0,0,0.2) !important;
+        }
+      `}</style>
+      <div ref={divRef} style={{ width: '100%', height: '100%', background: 'transparent' }} />
+    </>
+  );
+});
+
+FamilyTreeComponent.displayName = 'FamilyTreeComponent';
+export default FamilyTreeComponent;

@@ -1,5 +1,5 @@
 'use client';
-import React, { useRef, useCallback, useMemo, useState, useEffect } from 'react';
+import React, { useRef, useCallback, useMemo, useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import ForceGraph3D from 'react-force-graph-3d';
 import * as THREE from 'three';
 
@@ -8,13 +8,31 @@ interface FamilyTree3DProps {
   focusPersonId?: number | null;
 }
 
-export default function FamilyTree3D({ persons = [], focusPersonId }: FamilyTree3DProps) {
+export interface FamilyTree3DRef {
+  exportPNG: () => void;
+}
+
+const FamilyTree3D = forwardRef<FamilyTree3DRef, FamilyTree3DProps>(({ persons = [], focusPersonId }, ref) => {
   const fgRef = useRef<any>(null);
 
   const [selectedSearchId, setSelectedSearchId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  // Expose hàm xuất hình ảnh 3D
+  useImperativeHandle(ref, () => ({
+    exportPNG: () => {
+      const canvas = fgRef.current?.renderer()?.domElement as HTMLCanvasElement;
+      if (canvas) {
+        const image = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.download = 'Gia_Pha_3D.png';
+        link.href = image;
+        link.click();
+      }
+    }
+  }));
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -265,8 +283,8 @@ export default function FamilyTree3D({ persons = [], focusPersonId }: FamilyTree
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: '650px', background: '#050b14', borderRadius: '15px', overflow: 'hidden' }}>
       
-      {/* THANH TÌM KIẾM NỔI 3D (ĐÃ CHUYỂN LÊN GÓC TRÊN BÊN PHẢI) */}
-      <div ref={searchContainerRef} style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 10, width: '280px' }}>
+      {/* THANH TÌM KIẾM NỔI 3D */}
+      <div ref={searchContainerRef} style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 30, width: '280px' }}>
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
           <input
             type="text"
@@ -314,7 +332,6 @@ export default function FamilyTree3D({ persons = [], focusPersonId }: FamilyTree
           )}
         </div>
 
-        {/* DANH SÁCH GỢI Ý MỞ XUỐNG PHÍA DƯỚI */}
         {isOpen && (
           <div style={{
             position: 'absolute',
@@ -396,6 +413,7 @@ export default function FamilyTree3D({ persons = [], focusPersonId }: FamilyTree
         ref={fgRef}
         graphData={graphData}
         nodeThreeObject={createNodeObject}
+        rendererConfig={{ preserveDrawingBuffer: true }} // Cần thiết để hỗ trợ xuất file ảnh từ Canvas
         linkWidth={(link: any) => {
           if (!mainHighlightId) return 2;
           const sId = typeof link.source === 'object' ? link.source.id : link.source;
@@ -431,4 +449,7 @@ export default function FamilyTree3D({ persons = [], focusPersonId }: FamilyTree
       />
     </div>
   );
-}
+});
+
+FamilyTree3D.displayName = 'FamilyTree3D';
+export default FamilyTree3D;

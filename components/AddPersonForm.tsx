@@ -35,8 +35,8 @@ export default function AddPersonForm({ persons }: AddPersonFormProps) {
     setLoading(true);
 
     let avatarUrl = formData.gender === 'male' 
-      ? 'https://cdn.balkan.app/shared/m10.png' 
-      : 'https://cdn.balkan.app/shared/w10.png';
+      ? '/avatars/male.jpg' 
+      : '/avatars/female.png';
 
     // Nếu người dùng có chọn file ảnh từ máy
     if (file) {
